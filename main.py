@@ -8,19 +8,22 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 17.3.2012 23:44:50
+* Last Modified : 18.3.2012 0:29:40
 
 """
 
+from __future__ import division, print_function
 import pygame, random, sys
 from pygame.locals import *
 from colors import *
 
 # Constants
-WINDOWWIDTH = 600
-WINDOWHEIGHT = 600
-BACKGROUND = BLACK
-FPS = 60
+WINDOWWIDTH = 800
+WINDOWHEIGHT = 650
+WIDTHCHECK = WINDOWWIDTH
+HEIGHTCHECK = WINDOWHEIGHT - 50
+BACKGROUND = PURPLE
+FPS = 600
 
 
 # Functions
@@ -31,8 +34,39 @@ def terminate():
 def drawText(text, font, surface, x, y, color):
     textobj = font.render(text, 1, color)
     textrect = textobj.get_rect()
-    textrect.topleft = (x,y)
+    textrect.topleft = (x, y)
     surface.blit(textobj, textrect)
+
+# Classes
+class Player(pygame.sprite.Sprite):
+    def __init__(self, x, y, speed, leftKey, rightKey):
+        pygame.sprite.Sprite.__init__(self)
+        self.image_left = pygame.image.load("sprite/ply1l.png")
+        self.image_right = pygame.image.load("sprite/ply1r.png")
+        self.image_normal = pygame.image.load("sprite/ply1n.png")
+        self.image = self.image_normal
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.speed = speed
+        self.vx = 0
+        self.leftKey = leftKey
+        self.rightKey = rightKey
+        self.move = 0
+
+    def update(self, time):
+        if(self.vx < 0):
+            self.image = self.image_left
+        elif(self.vx > 0):
+            self.image = self.image_right
+        elif(self.vx == 0):
+            self.image = self.image_normal
+
+        self.move += self.speed * self.vx * time
+        if(self.move > 1 or self.move < 1):
+            self.rect.move_ip(int(self.move), 0)
+            self.move -= int(self.move)
+        
+
 
 
 # Pygame stuff setup
@@ -44,15 +78,36 @@ pygame.display.set_caption("Ball game")
 # Fonts setup
 font = pygame.font.SysFont(None, 12)
 
+# Sprite groups
+playerGroup = pygame.sprite.RenderPlain()
+
+ply = Player(400, 300, 300, K_LEFT, K_RIGHT)
+playerGroup.add(ply)
 
 # Game loop
 playing = True
 while playing:
+    time = clock.tick(FPS)
     for event in pygame.event.get():
         if(event.type == QUIT):
             terminate()
         if(event.type == KEYDOWN):
             if(event.key == K_ESCAPE):
                 terminate()
+            for ply in playerGroup:
+                if(event.key == ply.leftKey):
+                    ply.vx -= 1
+                if(event.key == ply.rightKey):
+                    ply.vx += 1
+        if(event.type == KEYUP):
+            for ply in playerGroup:
+                if(event.key == ply.leftKey):
+                    ply.vx += 1
+                if(event.key == ply.rightKey):
+                    ply.vx -= 1
+    
+    playerGroup.update(time/1000)
+    surface.fill(BACKGROUND)
+    playerGroup.draw(surface)
+    pygame.display.update()
 
-    clock.tick(FPS)
