@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 0:47:52
+* Last Modified : 18.3.2012 0:54:05
 
 """
 
@@ -22,7 +22,6 @@ WINDOWWIDTH = 800
 WINDOWHEIGHT = 650
 WIDTHCHECK = WINDOWWIDTH
 HEIGHTCHECK = WINDOWHEIGHT - 50
-BACKGROUND = PURPLE
 FPS = 120
 
 
@@ -85,10 +84,7 @@ pygame.init()
 clock = pygame.time.Clock()
 surface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 pygame.display.set_caption("Ball game")
-background = pygame.Surface((WINDOWWIDTH, WINDOWHEIGHT))
-background.fill(PURPLE)
-surface.blit(background, (0,0))
-pygame.display.update()
+BACKGROUND = pygame.image.load("background/1.png").convert()
 
 # Fonts setup
 font = pygame.font.SysFont(None, 12)
@@ -96,7 +92,7 @@ font = pygame.font.SysFont(None, 12)
 # Sprite groups
 playerGroup = pygame.sprite.RenderPlain()
 
-ply = Player(400, 300, 300, K_LEFT, K_RIGHT)
+ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-100, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
 # Game loop
@@ -121,7 +117,7 @@ while playing:
                 if(event.key == ply.rightKey):
                     ply.vx -= 1
     
-    surface.fill(PURPLE)
+    surface.blit(BACKGROUND, (0, 0))
     playerGroup.update(time/1000)
     playerGroup.draw(surface)
     pygame.display.update()
