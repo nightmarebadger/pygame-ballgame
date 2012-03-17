@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 0:29:40
+* Last Modified : 18.3.2012 0:47:52
 
 """
 
@@ -23,7 +23,7 @@ WINDOWHEIGHT = 650
 WIDTHCHECK = WINDOWWIDTH
 HEIGHTCHECK = WINDOWHEIGHT - 50
 BACKGROUND = PURPLE
-FPS = 600
+FPS = 120
 
 
 # Functions
@@ -63,9 +63,20 @@ class Player(pygame.sprite.Sprite):
 
         self.move += self.speed * self.vx * time
         if(self.move > 1 or self.move < 1):
-            self.rect.move_ip(int(self.move), 0)
-            self.move -= int(self.move)
-        
+            # Check if out of bounds
+            # Left
+            if(self.rect.left + int(self.move) > 0):
+                self.rect.move_ip(int(self.move), 0)
+                self.move -= int(self.move)
+            else:
+                self.rect.move_ip(-self.rect.left, 0)
+                self.move = 0
+            if(self.rect.right + int(self.move) < WIDTHCHECK):
+                self.rect.move_ip(int(self.move), 0)
+                self.move -= int(self.move)
+            else:
+                self.rect.move_ip(WIDTHCHECK - self.rect.right, 0)
+                self.move = 0 
 
 
 
@@ -74,6 +85,10 @@ pygame.init()
 clock = pygame.time.Clock()
 surface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 pygame.display.set_caption("Ball game")
+background = pygame.Surface((WINDOWWIDTH, WINDOWHEIGHT))
+background.fill(PURPLE)
+surface.blit(background, (0,0))
+pygame.display.update()
 
 # Fonts setup
 font = pygame.font.SysFont(None, 12)
@@ -106,8 +121,8 @@ while playing:
                 if(event.key == ply.rightKey):
                     ply.vx -= 1
     
+    surface.fill(PURPLE)
     playerGroup.update(time/1000)
-    surface.fill(BACKGROUND)
     playerGroup.draw(surface)
     pygame.display.update()
 
