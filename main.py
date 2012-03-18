@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 14:29:38
+* Last Modified : 18.3.2012 22:40:51
 
 """
 
@@ -35,11 +35,33 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+def normalFont(size):
+    return pygame.font.SysFont(None, size)
+
 def drawText(text, font, surface, x, y, color):
     textobj = font.render(text, 1, color)
     textrect = textobj.get_rect()
-    textrect.topleft = (x, y)
+    textrect.center = (x, y)
     surface.blit(textobj, textrect)
+
+def gameWon(continueKey, endKey):
+    surface.fill(BLACK)
+    drawText("Yeah, you won!", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//2, WHITE)
+    pygame.display.update()
+    waitForPlayerKeypress(continueKey, endKey)
+
+def waitForPlayerKeypress(continueKey, endKey):
+    while True:
+        for event in pygame.event.get():
+            if(event.type == QUIT):
+                terminate()
+            if(event.type == KEYDOWN):
+                if(event.key == K_ESCAPE):
+                    terminate()
+                elif(event.key == continueKey):
+                    return True
+                elif(event.key == endKey):
+                    terminate()
 
 # Classes
 class Player(pygame.sprite.Sprite):
@@ -159,20 +181,26 @@ class Ball(pygame.sprite.Sprite):
     image_green = pygame.image.load("images/ball/green.png")
     image_blue = pygame.image.load("images/ball/blue.png")
 
-    def __init__(self, x, y, rad, vx, vy, color):
+    def __init__(self, x, y, rad, vx, vy, color, split_times, split_into):
         pygame.sprite.Sprite.__init__(self)
-        
+       
+        self.xchange = 100
+        self.ychange = 200
+
         self.vx = vx
         self.vy = vy
         self.movex = 0
         self.movey = 0
         self.rad = rad
+        self.color = color
+        self.split_times = split_times
+        self.split_into = split_into
 
-        if(color == "red"):
+        if(self.color == "red"):
             self.image = pygame.transform.scale(Ball.image_red, (2 * self.rad, 2 * self.rad))
-        elif(color == "green"):
+        elif(self.color == "green"):
             self.image = pygame.transform.scale(Ball.image_green, (2 * self.rad, 2 * self.rad))
-        elif(color == "blue"):
+        elif(self.color == "blue"):
             self.image = pygame.transform.scale(Ball.image_blue, (2 * self.rad, 2 * self.rad))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -210,7 +238,15 @@ class Ball(pygame.sprite.Sprite):
             self.vx *= -1
 
     def split(self):
-        self.kill()
+        if(self.split_times > 0):
+            self.kill()
+            for i in range(self.split_into):
+                ball = Ball(self.rect.centerx, self.rect.centery, self.rad//2, random.choice((-1,1)) * (self.vx + random.randint(-self.xchange, self.xchange)), random.choice((-1,1)) * (self.vy + random.randint(-self.ychange, -self.ychange)), self.color, self.split_times - 1, self.split_into)
+                ballGroup.add(ball)
+        else:
+            self.kill()
+        if(not ballGroup):
+            gameWon(K_SPACE, ord('n'))
 
 # Pygame stuff setup
 pygame.init()
@@ -242,8 +278,8 @@ playerGroup.add(ply)
 
 color = ["red", "green", "blue"]
 for i in range(1):
-    r = random.randint(10,100)
-    ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
+    r = random.randint(50,100)
+    ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-200, 200), random.randint(-200, 200), color[random.randint(0,2)], 2, 2)
     ballGroup.add(ball)
 
 # Game loop
