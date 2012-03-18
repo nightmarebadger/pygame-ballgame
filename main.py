@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 0:54:05
+* Last Modified : 18.3.2012 1:13:43
 
 """
 
@@ -40,12 +40,12 @@ def drawText(text, font, surface, x, y, color):
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, leftKey, rightKey):
         pygame.sprite.Sprite.__init__(self)
-        self.image_left = pygame.image.load("sprite/ply1l.png")
-        self.image_right = pygame.image.load("sprite/ply1r.png")
-        self.image_normal = pygame.image.load("sprite/ply1n.png")
+        self.image_left = pygame.image.load("images/player/ply1l.png")
+        self.image_right = pygame.image.load("images/player/ply1r.png")
+        self.image_normal = pygame.image.load("images/player/ply1n.png")
         self.image = self.image_normal
         self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
+        self.rect.midbottom = (x, y)
         self.speed = speed
         self.vx = 0
         self.leftKey = leftKey
@@ -77,23 +77,51 @@ class Player(pygame.sprite.Sprite):
                 self.rect.move_ip(WIDTHCHECK - self.rect.right, 0)
                 self.move = 0 
 
+class Ball(pygame.sprite.Sprite):
+    image_red = pygame.image.load("images/ball/red.png")
+    image_green = pygame.image.load("images/ball/green.png")
+    image_blue = pygame.image.load("images/ball/blue.png")
 
+    def __init__(self, x, y, rad, vx, vy, color):
+        pygame.sprite.Sprite.__init__(self)
+        
+        self.vx = vx
+        self.vy = vy
+        self.rad = rad
+
+        if(color == "red"):
+            self.image = pygame.transform.scale(Ball.image_red, (2 * self.rad, 2 * self.rad))
+        elif(color == "green"):
+            self.image = pygame.transform.scale(Ball.image_green, (2 * self.rad, 2 * self.rad))
+        elif(color == "blue"):
+            self.image = pygame.transform.scale(Ball.image_blue, (2 * self.rad, 2 * self.rad))
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+    def update(self):
+        pass
+#        continue
+#        print("Update ball")
 
 # Pygame stuff setup
 pygame.init()
 clock = pygame.time.Clock()
 surface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 pygame.display.set_caption("Ball game")
-BACKGROUND = pygame.image.load("background/1.png").convert()
+BACKGROUND = pygame.image.load("images/background/1.png").convert()
 
 # Fonts setup
 font = pygame.font.SysFont(None, 12)
 
 # Sprite groups
 playerGroup = pygame.sprite.RenderPlain()
+ballGroup = pygame.sprite.RenderPlain()
 
-ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-100, 300, K_LEFT, K_RIGHT)
+ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
+
+ball = Ball(400, 300, 30, 0, 0, "blue")
+ballGroup.add(ball)
 
 # Game loop
 playing = True
@@ -117,8 +145,15 @@ while playing:
                 if(event.key == ply.rightKey):
                     ply.vx -= 1
     
-    surface.blit(BACKGROUND, (0, 0))
+
+    # Update all groups
     playerGroup.update(time/1000)
+    ballGroup.update()
+
+    # Drawing
+    surface.blit(BACKGROUND, (0, 0))
     playerGroup.draw(surface)
+    ballGroup.draw(surface)
+
     pygame.display.update()
 
