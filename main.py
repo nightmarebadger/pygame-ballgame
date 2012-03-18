@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 1:13:43
+* Last Modified : 18.3.2012 1:24:30
 
 """
 
@@ -23,6 +23,7 @@ WINDOWHEIGHT = 650
 WIDTHCHECK = WINDOWWIDTH
 HEIGHTCHECK = WINDOWHEIGHT - 50
 FPS = 120
+GRAVITATION = 100
 
 
 # Functions
@@ -87,6 +88,8 @@ class Ball(pygame.sprite.Sprite):
         
         self.vx = vx
         self.vy = vy
+        self.movex = 0
+        self.movey = 0
         self.rad = rad
 
         if(color == "red"):
@@ -98,10 +101,17 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
-    def update(self):
-        pass
-#        continue
-#        print("Update ball")
+    def update(self, time):
+        self.vy += time * GRAVITATION
+        self.move(time * self.vx, time * self.vy)
+
+    def move(self, x, y):
+        self.movex += x
+        self.movey += y
+        self.rect.move_ip(int(self.movex), int(self.movey))
+        self.movex -= int(self.movex)
+        self.movey -= int(self.movey)
+        
 
 # Pygame stuff setup
 pygame.init()
@@ -148,7 +158,7 @@ while playing:
 
     # Update all groups
     playerGroup.update(time/1000)
-    ballGroup.update()
+    ballGroup.update(time/1000)
 
     # Drawing
     surface.blit(BACKGROUND, (0, 0))
