@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 2:51:13
+* Last Modified : 18.3.2012 13:45:06
 
 """
 
@@ -17,8 +17,8 @@ import pygame, random, sys
 from pygame.locals import *
 from colors import *
 
-dirty = True
-#dirty = False
+#dirty = True
+dirty = False
 count = 0
 
 # Constants
@@ -81,7 +81,18 @@ class Player(pygame.sprite.Sprite):
                 self.move -= int(self.move)
             else:
                 self.rect.right = WIDTHCHECK
-                self.move = 0 
+                self.move = 0
+
+        if(self.hitBalls(ballGroup)):
+            terminate()
+
+    def hitBalls(self, balls):
+        for b in balls:
+#            if self.rect.colliderect(b.rect):
+            if(pygame.sprite.collide_mask(self, b)):
+                return True
+        return False
+
 
 class Ball(pygame.sprite.Sprite):
     image_red = pygame.image.load("images/ball/red.png")
@@ -167,7 +178,7 @@ ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
 color = ["red", "green", "blue"]
-for i in range(100):
+for i in range(3):
     r = random.randint(10,100)
     ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
     ballGroup.add(ball)
@@ -200,8 +211,8 @@ while playing:
     
 
     # Update all groups
-    playerGroup.update(time/1000)
     ballGroup.update(time/1000)
+    playerGroup.update(time/1000)
 
     # Drawing
     
