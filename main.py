@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 1:24:30
+* Last Modified : 18.3.2012 2:20:42
 
 """
 
@@ -69,13 +69,14 @@ class Player(pygame.sprite.Sprite):
                 self.rect.move_ip(int(self.move), 0)
                 self.move -= int(self.move)
             else:
-                self.rect.move_ip(-self.rect.left, 0)
+                self.rect.left = 0
                 self.move = 0
+            # Right
             if(self.rect.right + int(self.move) < WIDTHCHECK):
                 self.rect.move_ip(int(self.move), 0)
                 self.move -= int(self.move)
             else:
-                self.rect.move_ip(WIDTHCHECK - self.rect.right, 0)
+                self.rect.right = WIDTHCHECK
                 self.move = 0 
 
 class Ball(pygame.sprite.Sprite):
@@ -108,9 +109,31 @@ class Ball(pygame.sprite.Sprite):
     def move(self, x, y):
         self.movex += x
         self.movey += y
+
         self.rect.move_ip(int(self.movex), int(self.movey))
         self.movex -= int(self.movex)
         self.movey -= int(self.movey)
+        # Bottom
+        if(self.rect.bottom > HEIGHTCHECK):
+            self.rect.bottom = HEIGHTCHECK
+            self.movey = 0
+            self.vy *= -1
+        # Top
+        if(self.rect.top < 0):
+            self.rect.top = 0
+            self.movey = 0
+            self.vy *= -1
+        # Left
+        if(self.rect.left < 0):
+            self.rect.left = 0
+            self.movex = 0
+            self.vx *= -1
+        # Right
+        if(self.rect.right > WIDTHCHECK):
+            self.rect.right = WIDTHCHECK
+            self.movex = 0
+            self.vx *= -1
+
         
 
 # Pygame stuff setup
@@ -130,7 +153,7 @@ ballGroup = pygame.sprite.RenderPlain()
 ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
-ball = Ball(400, 300, 30, 0, 0, "blue")
+ball = Ball(400, 500, 50, 300, -200, "blue")
 ballGroup.add(ball)
 
 # Game loop
