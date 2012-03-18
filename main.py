@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 13:45:06
+* Last Modified : 18.3.2012 14:29:38
 
 """
 
@@ -43,11 +43,12 @@ def drawText(text, font, surface, x, y, color):
 
 # Classes
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, speed, leftKey, rightKey):
+    def __init__(self, x, y, speed, leftKey, rightKey, shootingKey):
         pygame.sprite.Sprite.__init__(self)
         self.image_left = pygame.image.load("images/player/ply1l.png")
         self.image_right = pygame.image.load("images/player/ply1r.png")
         self.image_normal = pygame.image.load("images/player/ply1n.png")
+        self.image_shooting = pygame.image.load("images/player/ply1s.png")
         self.image = self.image_normal
         self.rect = self.image.get_rect()
         self.rect.midbottom = (x, y)
@@ -55,36 +56,47 @@ class Player(pygame.sprite.Sprite):
         self.vx = 0
         self.leftKey = leftKey
         self.rightKey = rightKey
+        self.shootingKey = shootingKey
         self.move = 0
+        self.shooting = False
+        self.arrow = None
+        self.shooting_speed = 300
 
     def update(self, time):
-        if(self.vx < 0):
+        if(self.shooting):
+            self.image = self.image_shooting
+        elif(self.vx < 0):
             self.image = self.image_left
         elif(self.vx > 0):
             self.image = self.image_right
         elif(self.vx == 0):
             self.image = self.image_normal
 
-        self.move += self.speed * self.vx * time
-        if(self.move > 1 or self.move < 1):
-            # Check if out of bounds
-            # Left
-            if(self.rect.left + int(self.move) >= 0):
-                self.rect.move_ip(int(self.move), 0)
-                self.move -= int(self.move)
-            else:
-                self.rect.left = 0
-                self.move = 0
-            # Right
-            if(self.rect.right + int(self.move) <= WIDTHCHECK):
-                self.rect.move_ip(int(self.move), 0)
-                self.move -= int(self.move)
-            else:
-                self.rect.right = WIDTHCHECK
-                self.move = 0
+        if(not self.shooting):
+            self.move += self.speed * self.vx * time
+            if(self.move > 1 or self.move < 1):
+                # Check if out of bounds
+                # Left
+                if(self.rect.left + int(self.move) >= 0):
+                    self.rect.move_ip(int(self.move), 0)
+                    self.move -= int(self.move)
+                else:
+                    self.rect.left = 0
+                    self.move = 0
+                # Right
+                if(self.rect.right + int(self.move) <= WIDTHCHECK):
+                    self.rect.move_ip(int(self.move), 0)
+                    self.move -= int(self.move)
+                else:
+                    self.rect.right = WIDTHCHECK
+                    self.move = 0
 
         if(self.hitBalls(ballGroup)):
             terminate()
+        if(self.shooting and self.arrow == None):
+            self.shoot()
+        if(not self.shooting and self.arrow != None):
+            self.shoot_stop()
 
     def hitBalls(self, balls):
         for b in balls:
@@ -93,6 +105,54 @@ class Player(pygame.sprite.Sprite):
                 return True
         return False
 
+    def shoot(self):
+        global arrowGroup
+        self.arrow = Arrow(self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
+        arrowGroup.add(self.arrow)
+
+    def shoot_stop(self):
+        self.arrow.kill()
+#        del self.arrow
+        self.arrow = None
+
+class Arrow(pygame.sprite.Sprite):
+
+    def __init__(self, player, x, y, width, vy, color):
+        pygame.sprite.Sprite.__init__(self)
+
+        self.player = player
+        self.x = x
+        self.y = y
+        self.image = pygame.Surface((width, 1))
+        self.rect = self.image.get_rect()
+        self.rect.midbottom = (self.x, self.y)
+        self.mask = pygame.mask.from_surface(self.image, 0)
+        self.mask.fill()
+        self.vy = vy
+        self.movey = 0
+
+    def update(self, time):
+        self.movey += time * self.vy
+        if(self.rect.top - int(self.movey) < 0):
+            self.player.shoot_stop()
+        else:
+            self.image = pygame.Surface((self.rect.width, self.rect.height + int(self.movey)))
+            self.image.fill(BLACK)
+            self.movey -= int(self.movey)
+            self.rect = self.image.get_rect()
+            self.rect.midbottom = (self.x, self.y)
+            self.mask = pygame.mask.from_surface(self.image, 0)
+            self.mask.fill()
+            self.hitBalls(ballGroup)
+
+    def hitBalls(self, balls):
+        for b in balls:
+#            if self.rect.colliderect(b.rect):
+            if(pygame.sprite.collide_mask(self, b)):
+                self.player.shoot_stop()
+                b.split()
+                return True
+        return False
 
 class Ball(pygame.sprite.Sprite):
     image_red = pygame.image.load("images/ball/red.png")
@@ -149,7 +209,8 @@ class Ball(pygame.sprite.Sprite):
             self.movex = 0
             self.vx *= -1
 
-        
+    def split(self):
+        self.kill()
 
 # Pygame stuff setup
 pygame.init()
@@ -168,17 +229,19 @@ font = pygame.font.SysFont(None, 12)
 if(dirty):
     playerGroup = pygame.sprite.RenderUpdates()
     ballGroup = pygame.sprite.RenderUpdates()
+    arrowGroup = pygame.sprite.RenderUpdates()
 else:
     playerGroup = pygame.sprite.RenderPlain()
     ballGroup = pygame.sprite.RenderPlain()
+    arrowGroup = pygame.sprite.RenderPlain()
 
 
 
-ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
+ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
 playerGroup.add(ply)
 
 color = ["red", "green", "blue"]
-for i in range(3):
+for i in range(1):
     r = random.randint(10,100)
     ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
     ballGroup.add(ball)
@@ -194,38 +257,45 @@ while playing:
     for event in pygame.event.get():
         if(event.type == QUIT):
             terminate()
-        if(event.type == KEYDOWN):
+        elif(event.type == KEYDOWN):
             if(event.key == K_ESCAPE):
                 terminate()
             for ply in playerGroup:
                 if(event.key == ply.leftKey):
                     ply.vx -= 1
-                if(event.key == ply.rightKey):
+                elif(event.key == ply.rightKey):
                     ply.vx += 1
-        if(event.type == KEYUP):
+                elif(event.key == ply.shootingKey):
+                    ply.shooting = True
+        elif(event.type == KEYUP):
             for ply in playerGroup:
                 if(event.key == ply.leftKey):
                     ply.vx += 1
-                if(event.key == ply.rightKey):
+                elif(event.key == ply.rightKey):
                     ply.vx -= 1
+                elif(event.key == ply.shootingKey):
+                    ply.shooting = False
     
 
     # Update all groups
     ballGroup.update(time/1000)
     playerGroup.update(time/1000)
+    arrowGroup.update(time/1000)
 
     # Drawing
     
     if(dirty):
         rect1 = playerGroup.draw(surface)
         rect2 = ballGroup.draw(surface)
+        rect3 = arrowGroup.draw(surface)
 
-        pygame.display.update(rect1 + rect2)
+        pygame.display.update(rect1 + rect2 + rect3)
         playerGroup.clear(surface, BACKGROUND)
         ballGroup.clear(surface, BACKGROUND)
     else:
         surface.blit(BACKGROUND, (0, 0))
         playerGroup.draw(surface)
         ballGroup.draw(surface)
+        arrowGroup.draw(surface)
         pygame.display.update()
 
