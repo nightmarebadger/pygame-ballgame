@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 2:47:47
+* Last Modified : 18.3.2012 2:51:13
 
 """
 
@@ -167,15 +167,15 @@ ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
 color = ["red", "green", "blue"]
-for i in range(5):
-    r = random.randint(10,20)
+for i in range(100):
+    r = random.randint(10,100)
     ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
     ballGroup.add(ball)
 
 # Game loop
 playing = True
 while playing:
-    time = clock.tick()
+    time = clock.tick(FPS)
     count += time
     if(count >= 1000):
         print(clock.get_fps())
