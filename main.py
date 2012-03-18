@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 2:43:56
+* Last Modified : 18.3.2012 2:47:47
 
 """
 
@@ -17,8 +17,8 @@ import pygame, random, sys
 from pygame.locals import *
 from colors import *
 
-#dirty = True
-dirty = False
+dirty = True
+#dirty = False
 count = 0
 
 # Constants
@@ -69,14 +69,14 @@ class Player(pygame.sprite.Sprite):
         if(self.move > 1 or self.move < 1):
             # Check if out of bounds
             # Left
-            if(self.rect.left + int(self.move) > 0):
+            if(self.rect.left + int(self.move) >= 0):
                 self.rect.move_ip(int(self.move), 0)
                 self.move -= int(self.move)
             else:
                 self.rect.left = 0
                 self.move = 0
             # Right
-            if(self.rect.right + int(self.move) < WIDTHCHECK):
+            if(self.rect.right + int(self.move) <= WIDTHCHECK):
                 self.rect.move_ip(int(self.move), 0)
                 self.move -= int(self.move)
             else:
@@ -167,8 +167,8 @@ ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
 color = ["red", "green", "blue"]
-for i in range(20):
-    r = random.randint(10,100)
+for i in range(5):
+    r = random.randint(10,20)
     ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
     ballGroup.add(ball)
 
