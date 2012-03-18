@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 2:20:42
+* Last Modified : 18.3.2012 2:43:56
 
 """
 
@@ -16,6 +16,10 @@ from __future__ import division, print_function
 import pygame, random, sys
 from pygame.locals import *
 from colors import *
+
+#dirty = True
+dirty = False
+count = 0
 
 # Constants
 WINDOWWIDTH = 800
@@ -142,24 +146,40 @@ clock = pygame.time.Clock()
 surface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 pygame.display.set_caption("Ball game")
 BACKGROUND = pygame.image.load("images/background/1.png").convert()
+if(dirty):
+    surface.blit(BACKGROUND, (0,0))
+    pygame.display.update()
 
 # Fonts setup
 font = pygame.font.SysFont(None, 12)
 
 # Sprite groups
-playerGroup = pygame.sprite.RenderPlain()
-ballGroup = pygame.sprite.RenderPlain()
+if(dirty):
+    playerGroup = pygame.sprite.RenderUpdates()
+    ballGroup = pygame.sprite.RenderUpdates()
+else:
+    playerGroup = pygame.sprite.RenderPlain()
+    ballGroup = pygame.sprite.RenderPlain()
+
+
 
 ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT)
 playerGroup.add(ply)
 
-ball = Ball(400, 500, 50, 300, -200, "blue")
-ballGroup.add(ball)
+color = ["red", "green", "blue"]
+for i in range(20):
+    r = random.randint(10,100)
+    ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-500, 500), random.randint(-500, 500), color[random.randint(0,2)])
+    ballGroup.add(ball)
 
 # Game loop
 playing = True
 while playing:
-    time = clock.tick(FPS)
+    time = clock.tick()
+    count += time
+    if(count >= 1000):
+        print(clock.get_fps())
+        count = 0
     for event in pygame.event.get():
         if(event.type == QUIT):
             terminate()
@@ -184,9 +204,17 @@ while playing:
     ballGroup.update(time/1000)
 
     # Drawing
-    surface.blit(BACKGROUND, (0, 0))
-    playerGroup.draw(surface)
-    ballGroup.draw(surface)
+    
+    if(dirty):
+        rect1 = playerGroup.draw(surface)
+        rect2 = ballGroup.draw(surface)
 
-    pygame.display.update()
+        pygame.display.update(rect1 + rect2)
+        playerGroup.clear(surface, BACKGROUND)
+        ballGroup.clear(surface, BACKGROUND)
+    else:
+        surface.blit(BACKGROUND, (0, 0))
+        playerGroup.draw(surface)
+        ballGroup.draw(surface)
+        pygame.display.update()
 
