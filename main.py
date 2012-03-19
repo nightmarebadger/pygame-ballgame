@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 3:33:22
+* Last Modified : 19.3.2012 3:39:26
 
 """
 
@@ -219,8 +219,16 @@ class Player(pygame.sprite.Sprite):
         self.shooting = False
         self.arrow = None
         self.shooting_speed = 300
+        self.left = False
+        self.right = False
 
     def update(self, time):
+        if(self.left == self.right):
+            self.vx = 0
+        elif(self.left):
+            self.vx = -1
+        elif(self.right):
+            self.vx = 1
         if(self.shooting):
             self.image = self.image_shooting
         elif(self.vx < 0):
@@ -437,17 +445,17 @@ def gameLoop():
                     terminate()
                 for ply in playerGroup:
                     if(event.key == ply.leftKey):
-                        ply.vx -= 1
+                        ply.left = True
                     elif(event.key == ply.rightKey):
-                        ply.vx += 1
+                        ply.right = True
                     elif(event.key == ply.shootingKey):
                         ply.shooting = True
             elif(event.type == KEYUP):
                 for ply in playerGroup:
                     if(event.key == ply.leftKey):
-                        ply.vx += 1
+                        ply.left = False
                     elif(event.key == ply.rightKey):
-                        ply.vx -= 1
+                        ply.right = False
                     elif(event.key == ply.shootingKey):
                         ply.shooting = False
         
