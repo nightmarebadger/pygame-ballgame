@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 3:48:01
+* Last Modified : 19.3.2012 15:43:31
 
 """
 
@@ -17,19 +17,9 @@ import pygame, random, sys
 from pygame.locals import *
 from colors import *
 
-#dirty = True
-dirty = False
-show_fps = False
-ball_debug = False
-two_player = True
 
 # Constants
-WINDOWWIDTH = 800
-WINDOWHEIGHT = 650
-WIDTHCHECK = WINDOWWIDTH
-HEIGHTCHECK = WINDOWHEIGHT - 50
-FPS = 120
-GRAVITATION = 100
+
 
 
 # Functions
@@ -47,45 +37,7 @@ def drawText(text, font, surface, x, y, color):
     surface.blit(textobj, textrect)
     return textrect
 
-def waitForPlayerKeypress(continueKey, endKey = K_ESCAPE):
-    while True:
-        for event in pygame.event.get():
-            if(event.type == QUIT):
-                terminate()
-            elif(event.type == KEYDOWN):
-                if(event.key == K_ESCAPE):
-                    terminate()
-                elif(event.key == continueKey):
-                    return True
-                elif(event.key == endKey):
-                    terminate()
-                if(continueKey == "any"):
-                    return True
-            elif(event.type == MOUSEBUTTONDOWN):
-                if(continueKey == "any" or continueKey == "mouse"):
-                    return True
 
-##############################
-#
-#  DIFFERENT "POPUP" SCREENS
-#
-##############################
-
-def gameWon(continueKey, endKey):
-    surface.fill(BLACK)
-    drawText("Yeah, you won!", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//2, WHITE)
-    pygame.display.update()
-    waitForPlayerKeypress(continueKey, endKey)
-
-def getReady():
-    base = WINDOWHEIGHT//2
-    add = 0
-    surface.fill(BLACK)
-    tmprect = drawText("Get ready!", normalFont(80), surface, WINDOWWIDTH//2, base + add, WHITE)
-    add = 100
-    tmprect = drawText("Press any key ... ", normalFont(20), surface, WINDOWWIDTH//2, base + add, WHITE)
-    pygame.display.update()
-    waitForPlayerKeypress("any")
 
 ##############################
 #
@@ -93,55 +45,6 @@ def getReady():
 #
 ##############################
 
-def startMenu():
-    repeat = False
-    while_loop = True
-    surface.fill(BLACK)
-    newgame_rect = drawText("New game", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//3, WHITE)
-    instructions_rect = drawText("Instructions", normalFont(60), surface, WINDOWWIDTH//2, 3/2 * WINDOWHEIGHT//3, WHITE)
-    quit_rect = drawText("Quit", normalFont(60), surface, WINDOWWIDTH//2, 2 * WINDOWHEIGHT//3, WHITE)
-    pygame.display.update()
-    while while_loop:
-        for event in pygame.event.get():
-            if(event.type == QUIT):
-                terminate()
-            elif(event.type == KEYDOWN):
-                if(event.key == K_ESCAPE):
-                    terminate()
-                elif(event.key == K_SPACE):
-                    getReady()
-                    gameLoop()
-                    repeat = True
-                    while_loop = False
-            elif(event.type == MOUSEBUTTONDOWN):
-                if(event.button == 1):
-                    if(newgame_rect.collidepoint(event.pos)):
-                        getReady()
-                        gameLoop()
-                        repeat = True
-                        while_loop = False
-                    elif(instructions_rect.collidepoint(event.pos)):
-                        instructions()
-                        repeat = True
-                        while_loop = False
-                    elif(quit_rect.collidepoint(event.pos)):
-                        terminate()
-    if(repeat):
-        startMenu()
-
-def instructions():
-    base = WINDOWHEIGHT//2 - 77
-    add = 0
-    surface.fill(BLACK)
-    tmprect = drawText("Use arrow keys to move", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
-    add += 1.5 * tmprect.height
-    tmprect = drawText("and space to shoot.", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
-    add += 1.5 * tmprect.height
-    tmprect = drawText("Destroy all balls while dodging them!", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
-    add += 1.5 * tmprect.height
-    tmprect = drawText("Careful, you can't move and shoot at the same time ...", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
-    pygame.display.update()
-    waitForPlayerKeypress("any")
 
 
 
@@ -152,48 +55,263 @@ def instructions():
 #
 ##############################
 
-def readLevel(name):
-    
-    def returnNum(foo):
-        if(foo[0] == '*'):
-            return_value = random.choice((-1,1))
-            foo = foo[1:]
+class Game:
+    def __init__(self, windowwidth, windowheight, endingLevel,
+            gameFolder = "levels", startingLevel = 1,
+            widthcheck = None, heightcheck = None,
+            fps = 120, gravitation = 100,
+            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Awesome game! :D"):
+        
+        # Base game options
+        self.windowwidth = windowwidth
+        self.windowheight = windowheight
+        self.gameFolder = gameFolder
+        self.startingLevel = startingLevel
+        self.endingLevel = endingLevel
+        self.currentLevel = startingLevel
+
+        # Extra game options
+        if(widthcheck == None):
+            self.widthcheck = widthcheck
+        if(heightcheck == None):
+            self.heightcheck = windowheight
+        self.fps = fps
+        self.gravitation = gravitation
+        self.two_player = two_player
+
+        # Debug options
+        self.show_fps = show_fps
+        self.ball_debug = ball_debug
+        self.dirty = dirty
+
+        # Caption
+        self.caption = caption
+
+
+
+
+    def setup(self):
+        # Pygame stuff setup
+        pygame.init()
+        self.clock = pygame.time.Clock()
+        self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
+        pygame.display.set_caption(self.caption)
+        self.background = pygame.image.load("images/background/1.png").convert()
+        if(self.dirty):
+            self.surface.blit(self.background, (0,0))
+            pygame.display.update()
+
+        # Sprite groups
+        if(self.dirty):
+            self.playerGroup = pygame.sprite.RenderUpdates()
+            self.ballGroup = pygame.sprite.RenderUpdates()
+            self.arrowGroup = pygame.sprite.RenderUpdates()
         else:
-            return_value = 1
-        if('(' in foo):
-            foo = foo[1:-1]
-            foo = foo.split(',')
-            return_value *= random.randint(int(foo[0]), int(foo[1]))
+            self.playerGroup = pygame.sprite.RenderPlain()
+            self.ballGroup = pygame.sprite.RenderPlain()
+            self.arrowGroup = pygame.sprite.RenderPlain()
+
+        # Player setup
+        if(not self.two_player):
+            ply = Player(self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            self.playerGroup.add(ply)
         else:
-            return_value *= int(foo)
+            ply = Player(3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            self.playerGroup.add(ply)
+            ply = Player(self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
+            self.playerGroup.add(ply)
 
-        return return_value
+    def readLevel(self):
+        
+        def returnNum(foo):
+            if(foo[0] == '*'):
+                return_value = random.choice((-1,1))
+                foo = foo[1:]
+            else:
+                return_value = 1
+            if('(' in foo):
+                foo = foo[1:-1]
+                foo = foo.split(',')
+                return_value *= random.randint(int(foo[0]), int(foo[1]))
+            else:
+                return_value *= int(foo)
 
-    with open(name) as f:
-        for line in f:
-            if(line[0] != '#'):
-                foo = line.split()
-                if(len(foo) == 8):
-                    x = returnNum(foo[0])
-                    y = returnNum(foo[1])
-                    rad = returnNum(foo[2])
-                    vx = returnNum(foo[3])
-                    vy = returnNum(foo[4])
-                    color = foo[5]
-                    split_times = returnNum(foo[6])
-                    split_into = returnNum(foo[7])
-                    if(ball_debug):
-                        print("------------------")
-                        print("x: {0}".format(x))
-                        print("y: {0}".format(y))
-                        print("rad: {0}".format(rad))
-                        print("vx: {0}".format(vx))
-                        print("vy: {0}".format(vy))
+            return return_value
+        
+#        name = "{0}/level{1}.lvl".format(self.gameFolder, self.currentLevel)
+        with open("{0}/level{1}.lvl".format(self.gameFolder, self.currentLevel)) as f:
+            for line in f:
+                if(line[0] != '#'):
+                    foo = line.split()
+                    if(len(foo) == 8):
+                        x = returnNum(foo[0])
+                        y = returnNum(foo[1])
+                        rad = returnNum(foo[2])
+                        vx = returnNum(foo[3])
+                        vy = returnNum(foo[4])
+                        color = foo[5]
+                        split_times = returnNum(foo[6])
+                        split_into = returnNum(foo[7])
+                        if(ball_debug):
+                            print("------------------")
+                            print("x: {0}".format(x))
+                            print("y: {0}".format(y))
+                            print("rad: {0}".format(rad))
+                            print("vx: {0}".format(vx))
+                            print("vy: {0}".format(vy))
 
-                    ball = Ball(x, y, rad, vx, vy, color, split_times, split_into)
-                    ballGroup.add(ball)
+                        ball = Ball(x, y, rad, vx, vy, color, split_times, split_into)
+                        self.ballGroup.add(ball)
 
+    def waitForPlayerKeypress(self, continueKey, endKey = K_ESCAPE):
+        while True:
+            for event in pygame.event.get():
+                if(event.type == QUIT):
+                    terminate()
+                elif(event.type == KEYDOWN):
+                    if(event.key == K_ESCAPE):
+                        terminate()
+                    elif(event.key == continueKey):
+                        return True
+                    elif(event.key == endKey):
+                        terminate()
+                    if(continueKey == "any"):
+                        return True
+                elif(event.type == MOUSEBUTTONDOWN):
+                    if(continueKey == "any" or continueKey == "mouse"):
+                        return True
 
+    def gameLoop(self):
+        playing = True
+        if(self.show_fps):
+            count = 0
+        self.clock.tick()
+        while playing:
+            time = clock.tick(FPS)
+            if(self.show_fps):
+                count += time
+                if(count >= 1000):
+                    print(clock.get_fps())
+                    count = 0
+            for event in pygame.event.get():
+                if(event.type == QUIT):
+                    terminate()
+                elif(event.type == KEYDOWN):
+                    if(event.key == K_ESCAPE):
+                        terminate()
+                    for ply in self.playerGroup:
+                        if(event.key == ply.leftKey):
+                            ply.left = True
+                        elif(event.key == ply.rightKey):
+                            ply.right = True
+                        elif(event.key == ply.shootingKey):
+                            ply.shooting = True
+                elif(event.type == KEYUP):
+                    for ply in self.playerGroup:
+                        if(event.key == ply.leftKey):
+                            ply.left = False
+                        elif(event.key == ply.rightKey):
+                            ply.right = False
+                        elif(event.key == ply.shootingKey):
+                            ply.shooting = False
+            
+
+            # Update all groups
+            self.ballGroup.update(time/1000)
+            self.playerGroup.update(time/1000)
+            self.arrowGroup.update(time/1000)
+
+            # Drawing
+            
+            if(dirty):
+                rect1 = self.playerGroup.draw(self.surface)
+                rect2 = self.ballGroup.draw(self.surface)
+                rect3 = self.arrowGroup.draw(self.surface)
+
+                pygame.display.update(rect1 + rect2 + rect3)
+                self.playerGroup.clear(self.surface, self.background)
+                self.ballGroup.clear(self.surface, self.background)
+                self.arrowGroup.clear(self.surface, self.background)
+            else:
+                self.surface.blit(self.background, (0, 0))
+                self.playerGroup.draw(self.surface)
+                self.ballGroup.draw(self.surface)
+                self.arrowGroup.draw(self.surface)
+                pygame.display.update()
+
+################
+
+    def startMenu(self):
+        repeat = False
+        while_loop = True
+        self.surface.fill(BLACK)
+        newgame_rect = drawText("New game", normalFont(60), self.surface, self.windowwidth//2, self.windowheight//3, WHITE)
+        instructions_rect = drawText("Instructions", normalFont(60), self.surface, self.windowwidth//2, 3/2 * self.windowheight//3, WHITE)
+        quit_rect = drawText("Quit", normalFont(60), self.surface, self.windowwidth//2, 2 * self.windowheight//3, WHITE)
+        pygame.display.update()
+        while while_loop:
+            for event in pygame.event.get():
+                if(event.type == QUIT):
+                    terminate()
+                elif(event.type == KEYDOWN):
+                    if(event.key == K_ESCAPE):
+                        terminate()
+                    elif(event.key == K_SPACE):
+                        self.getReady()
+                        self.gameLoop()
+                        repeat = True
+                        while_loop = False
+                elif(event.type == MOUSEBUTTONDOWN):
+                    if(event.button == 1):
+                        if(newgame_rect.collidepoint(event.pos)):
+                            self.getReady()
+                            self.gameLoop()
+                            repeat = True
+                            while_loop = False
+                        elif(instructions_rect.collidepoint(event.pos)):
+                            self.instructions()
+                            repeat = True
+                            while_loop = False
+                        elif(quit_rect.collidepoint(event.pos)):
+                            terminate()
+        if(repeat):
+            self.startMenu()
+
+    def instructions(self):
+        base = self.windowheight//2 - 77
+        add = 0
+        self.surface.fill(BLACK)
+        tmprect = drawText("Use arrow keys to move", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 1.5 * tmprect.height
+        tmprect = drawText("and space to shoot.", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 1.5 * tmprect.height
+        tmprect = drawText("Destroy all balls while dodging them!", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 1.5 * tmprect.height
+        tmprect = drawText("Careful, you can't move and shoot at the same time ...", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        self.waitForPlayerKeypress("any")
+
+    ##############################
+    #
+    #  DIFFERENT "POPUP" SCREENS
+    #
+    ##############################
+
+    def gameWon(self, continueKey, endKey):
+        self.surface.fill(BLACK)
+        drawText("Yeah, you won!", normalFont(60), self.surface, self.windowwidth//2, self.windowheight//2, WHITE)
+        pygame.display.update()
+        waitForPlayerKeypress(continueKey, endKey)
+
+    def getReady(self):
+        base = WINDOWHEIGHT//2
+        add = 0
+        self.surface.fill(BLACK)
+        tmprect = drawText("Get ready!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        add = 100
+        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        waitForPlayerKeypress("any")
 
 ##############################
 #
@@ -408,100 +526,25 @@ class Ball(pygame.sprite.Sprite):
         if(not ballGroup):
             gameWon(K_SPACE, ord('n'))
 
-# Pygame stuff setup
-pygame.init()
-clock = pygame.time.Clock()
-surface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-pygame.display.set_caption("Ball game")
-BACKGROUND = pygame.image.load("images/background/1.png").convert()
-if(dirty):
-    surface.blit(BACKGROUND, (0,0))
-    pygame.display.update()
-
-# Fonts setup
-font = pygame.font.SysFont(None, 12)
-
-# Sprite groups
-if(dirty):
-    playerGroup = pygame.sprite.RenderUpdates()
-    ballGroup = pygame.sprite.RenderUpdates()
-    arrowGroup = pygame.sprite.RenderUpdates()
-else:
-    playerGroup = pygame.sprite.RenderPlain()
-    ballGroup = pygame.sprite.RenderPlain()
-    arrowGroup = pygame.sprite.RenderPlain()
 
 
 
+"""
+    def __init__(self, windowwidth, windowheight, endingLevel,
+            gameFolder = "levels", startingLevel = 1,
+            widthcheck = None, heightcheck = None,
+            fps = 120, gravitation = 100,
+            two_player = False, show_fps = False, ball_debug = False, dirty = False):
+"""
+
+game = Game(800, 650, 6, heightcheck = 600)
+game.setup()
+game.startMenu()
 
 
-def gameLoop():
-    playing = True
-    if(show_fps):
-        count = 0
-    clock.tick()
-    while playing:
-        time = clock.tick(FPS)
-        if(show_fps):
-            count += time
-            if(count >= 1000):
-                print(clock.get_fps())
-                count = 0
-        for event in pygame.event.get():
-            if(event.type == QUIT):
-                terminate()
-            elif(event.type == KEYDOWN):
-                if(event.key == K_ESCAPE):
-                    terminate()
-                for ply in playerGroup:
-                    if(event.key == ply.leftKey):
-                        ply.left = True
-                    elif(event.key == ply.rightKey):
-                        ply.right = True
-                    elif(event.key == ply.shootingKey):
-                        ply.shooting = True
-            elif(event.type == KEYUP):
-                for ply in playerGroup:
-                    if(event.key == ply.leftKey):
-                        ply.left = False
-                    elif(event.key == ply.rightKey):
-                        ply.right = False
-                    elif(event.key == ply.shootingKey):
-                        ply.shooting = False
-        
-
-        # Update all groups
-        ballGroup.update(time/1000)
-        playerGroup.update(time/1000)
-        arrowGroup.update(time/1000)
-
-        # Drawing
-        
-        if(dirty):
-            rect1 = playerGroup.draw(surface)
-            rect2 = ballGroup.draw(surface)
-            rect3 = arrowGroup.draw(surface)
-
-            pygame.display.update(rect1 + rect2 + rect3)
-            playerGroup.clear(surface, BACKGROUND)
-            ballGroup.clear(surface, BACKGROUND)
-        else:
-            surface.blit(BACKGROUND, (0, 0))
-            playerGroup.draw(surface)
-            ballGroup.draw(surface)
-            arrowGroup.draw(surface)
-            pygame.display.update()
-
-if(not two_player):
-    ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
-    playerGroup.add(ply)
-else:
-    ply = Player(3 * WINDOWWIDTH//4, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
-    playerGroup.add(ply)
-    ply = Player(WINDOWWIDTH//4, WINDOWHEIGHT-50, 300, ord('a'), ord('d'), ord('1'), 2)
-    playerGroup.add(ply)
-
-readLevel("levels/level1.lvl")
-
-
-startMenu()
+WINDOWWIDTH = 800
+WINDOWHEIGHT = 650
+WIDTHCHECK = WINDOWWIDTH
+HEIGHTCHECK = WINDOWHEIGHT - 50
+FPS = 0
+GRAVITATION = 100
