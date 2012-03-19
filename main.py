@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 2:47:39
+* Last Modified : 19.3.2012 3:33:22
 
 """
 
@@ -20,6 +20,7 @@ from colors import *
 #dirty = True
 dirty = False
 show_fps = False
+ball_debug = False
 
 # Constants
 WINDOWWIDTH = 800
@@ -143,6 +144,53 @@ def instructions():
 
 
 
+
+##############################
+#
+#          LEVELS
+#
+##############################
+
+def readLevel(name):
+    
+    def returnNum(foo):
+        if(foo[0] == '*'):
+            return_value = random.choice((-1,1))
+            foo = foo[1:]
+        else:
+            return_value = 1
+        if('(' in foo):
+            foo = foo[1:-1]
+            foo = foo.split(',')
+            return_value *= random.randint(int(foo[0]), int(foo[1]))
+        else:
+            return_value *= int(foo)
+
+        return return_value
+
+    with open(name) as f:
+        for line in f:
+            if(line[0] != '#'):
+                foo = line.split()
+                if(len(foo) == 8):
+                    x = returnNum(foo[0])
+                    y = returnNum(foo[1])
+                    rad = returnNum(foo[2])
+                    vx = returnNum(foo[3])
+                    vy = returnNum(foo[4])
+                    color = foo[5]
+                    split_times = returnNum(foo[6])
+                    split_into = returnNum(foo[7])
+                    if(ball_debug):
+                        print("------------------")
+                        print("x: {0}".format(x))
+                        print("y: {0}".format(y))
+                        print("rad: {0}".format(rad))
+                        print("vx: {0}".format(vx))
+                        print("vy: {0}".format(vy))
+
+                    ball = Ball(x, y, rad, vx, vy, color, split_times, split_into)
+                    ballGroup.add(ball)
 
 
 
@@ -296,6 +344,12 @@ class Ball(pygame.sprite.Sprite):
     def update(self, time):
         self.vy += time * GRAVITATION
         self.move(time * self.vx, time * self.vy)
+        if(ball_debug):
+            print("------------------")
+            print("x: {0}".format(self.rect.centerx))
+            print("y: {0}".format(self.rect.centery))
+            print("vx: {0}".format(self.vx))
+            print("vy: {0}".format(self.vy))
 
     def move(self, x, y):
         self.movex += x
@@ -361,21 +415,13 @@ else:
 
 
 
-ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
-playerGroup.add(ply)
-
-color = ["red", "green", "blue"]
-for i in range(1):
-    r = random.randint(50,100)
-    ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-200, 200), random.randint(-200, 200), color[random.randint(0,2)], 2, 2)
-    ballGroup.add(ball)
-
 
 
 def gameLoop():
     playing = True
     if(show_fps):
         count = 0
+    clock.tick()
     while playing:
         time = clock.tick(FPS)
         if(show_fps):
@@ -427,5 +473,12 @@ def gameLoop():
             ballGroup.draw(surface)
             arrowGroup.draw(surface)
             pygame.display.update()
+
+
+ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+playerGroup.add(ply)
+
+readLevel("levels/level2.lvl")
+
 
 startMenu()
