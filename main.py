@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 15:43:31
+* Last Modified : 19.3.2012 17:27:59
 
 """
 
@@ -72,9 +72,13 @@ class Game:
 
         # Extra game options
         if(widthcheck == None):
+            self.widthcheck = windowwidth
+        else:
             self.widthcheck = widthcheck
         if(heightcheck == None):
             self.heightcheck = windowheight
+        else:
+            self.heightcheck = heightcheck
         self.fps = fps
         self.gravitation = gravitation
         self.two_player = two_player
@@ -87,7 +91,11 @@ class Game:
         # Caption
         self.caption = caption
 
-
+    def newGame(self):
+        self.setup()
+        self.readLevel()
+        self.startMenu()
+#        self.gameLoop()
 
 
     def setup(self):
@@ -113,12 +121,12 @@ class Game:
 
         # Player setup
         if(not self.two_player):
-            ply = Player(self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
         else:
-            ply = Player(3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, 3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
-            ply = Player(self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
+            ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
             self.playerGroup.add(ply)
 
     def readLevel(self):
@@ -152,7 +160,7 @@ class Game:
                         color = foo[5]
                         split_times = returnNum(foo[6])
                         split_into = returnNum(foo[7])
-                        if(ball_debug):
+                        if(self.ball_debug):
                             print("------------------")
                             print("x: {0}".format(x))
                             print("y: {0}".format(y))
@@ -160,7 +168,7 @@ class Game:
                             print("vx: {0}".format(vx))
                             print("vy: {0}".format(vy))
 
-                        ball = Ball(x, y, rad, vx, vy, color, split_times, split_into)
+                        ball = Ball(self, x, y, rad, vx, vy, color, split_times, split_into)
                         self.ballGroup.add(ball)
 
     def waitForPlayerKeypress(self, continueKey, endKey = K_ESCAPE):
@@ -187,11 +195,11 @@ class Game:
             count = 0
         self.clock.tick()
         while playing:
-            time = clock.tick(FPS)
+            time = self.clock.tick(self.fps)
             if(self.show_fps):
                 count += time
                 if(count >= 1000):
-                    print(clock.get_fps())
+                    print(self.clock.get_fps())
                     count = 0
             for event in pygame.event.get():
                 if(event.type == QUIT):
@@ -223,7 +231,7 @@ class Game:
 
             # Drawing
             
-            if(dirty):
+            if(self.dirty):
                 rect1 = self.playerGroup.draw(self.surface)
                 rect2 = self.ballGroup.draw(self.surface)
                 rect3 = self.arrowGroup.draw(self.surface)
@@ -301,17 +309,17 @@ class Game:
         self.surface.fill(BLACK)
         drawText("Yeah, you won!", normalFont(60), self.surface, self.windowwidth//2, self.windowheight//2, WHITE)
         pygame.display.update()
-        waitForPlayerKeypress(continueKey, endKey)
+        self.waitForPlayerKeypress(continueKey, endKey)
 
     def getReady(self):
-        base = WINDOWHEIGHT//2
+        base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
         tmprect = drawText("Get ready!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add = 100
         tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
-        waitForPlayerKeypress("any")
+        self.waitForPlayerKeypress("any")
 
 ##############################
 #
@@ -320,7 +328,7 @@ class Game:
 ##############################
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
+    def __init__(self, game, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
         pygame.sprite.Sprite.__init__(self)
         if(player_number == 1):
             self.image_left = pygame.image.load("images/player/ply1l.png")
@@ -333,6 +341,7 @@ class Player(pygame.sprite.Sprite):
             self.image_normal = pygame.image.load("images/player/ply2n.png")
             self.image_shooting = pygame.image.load("images/player/ply2s.png")
 
+        self.game = game
         self.image = self.image_normal
         self.rect = self.image.get_rect()
         self.rect.midbottom = (x, y)
@@ -376,16 +385,16 @@ class Player(pygame.sprite.Sprite):
                     self.rect.left = 0
                     self.move = 0
                 # Right
-                if(self.rect.right + int(self.move) <= WIDTHCHECK):
+                if(self.rect.right + int(self.move) <= self.game.widthcheck):
                     self.rect.move_ip(int(self.move), 0)
                     self.move -= int(self.move)
                 else:
-                    self.rect.right = WIDTHCHECK
+                    self.rect.right = self.game.widthcheck
                     self.move = 0
 
-        if(self.hitBalls(ballGroup)):
+        if(self.hitBalls(self.game.ballGroup)):
             self.kill()
-            if(not playerGroup):
+            if(not self.game.playerGroup):
                 terminate()
         if(self.shooting and self.arrow == None):
             self.shoot()
@@ -400,20 +409,19 @@ class Player(pygame.sprite.Sprite):
         return False
 
     def shoot(self):
-        global arrowGroup
-        self.arrow = Arrow(self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
-        arrowGroup.add(self.arrow)
+        self.arrow = Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
+        self.game.arrowGroup.add(self.arrow)
 
     def shoot_stop(self):
         self.arrow.kill()
-#        del self.arrow
         self.arrow = None
 
 class Arrow(pygame.sprite.Sprite):
 
-    def __init__(self, player, x, y, width, vy, color):
+    def __init__(self, game, player, x, y, width, vy, color):
         pygame.sprite.Sprite.__init__(self)
 
+        self.game = game
         self.player = player
         self.x = x
         self.y = y
@@ -437,7 +445,7 @@ class Arrow(pygame.sprite.Sprite):
             self.rect.midbottom = (self.x, self.y)
             self.mask = pygame.mask.from_surface(self.image, 0)
             self.mask.fill()
-            self.hitBalls(ballGroup)
+            self.hitBalls(self.game.ballGroup)
 
     def hitBalls(self, balls):
         for b in balls:
@@ -453,9 +461,11 @@ class Ball(pygame.sprite.Sprite):
     image_green = pygame.image.load("images/ball/green.png")
     image_blue = pygame.image.load("images/ball/blue.png")
 
-    def __init__(self, x, y, rad, vx, vy, color, split_times, split_into):
+    def __init__(self, game, x, y, rad, vx, vy, color, split_times, split_into):
         pygame.sprite.Sprite.__init__(self)
        
+        self.game = game
+
         self.xchange = 100
         self.ychange = 200
 
@@ -478,9 +488,9 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = (x, y)
 
     def update(self, time):
-        self.vy += time * GRAVITATION
+        self.vy += time * self.game.gravitation
         self.move(time * self.vx, time * self.vy)
-        if(ball_debug):
+        if(self.game.ball_debug):
             print("------------------")
             print("x: {0}".format(self.rect.centerx))
             print("y: {0}".format(self.rect.centery))
@@ -495,8 +505,8 @@ class Ball(pygame.sprite.Sprite):
         self.movex -= int(self.movex)
         self.movey -= int(self.movey)
         # Bottom
-        if(self.rect.bottom > HEIGHTCHECK):
-            self.rect.bottom = HEIGHTCHECK
+        if(self.rect.bottom > self.game.heightcheck):
+            self.rect.bottom = self.game.heightcheck
             self.movey = 0
             self.vy *= -1
         # Top
@@ -510,8 +520,8 @@ class Ball(pygame.sprite.Sprite):
             self.movex = 0
             self.vx *= -1
         # Right
-        if(self.rect.right > WIDTHCHECK):
-            self.rect.right = WIDTHCHECK
+        if(self.rect.right > self.game.widthcheck):
+            self.rect.right = self.game.widthcheck
             self.movex = 0
             self.vx *= -1
 
@@ -519,12 +529,12 @@ class Ball(pygame.sprite.Sprite):
         if(self.split_times > 0):
             self.kill()
             for i in range(self.split_into):
-                ball = Ball(self.rect.centerx, self.rect.centery, self.rad//2, random.choice((-1,1)) * (self.vx + random.randint(-self.xchange, self.xchange)), random.choice((-1,1)) * (self.vy + random.randint(-self.ychange, -self.ychange)), self.color, self.split_times - 1, self.split_into)
-                ballGroup.add(ball)
+                ball = Ball(self.game, self.rect.centerx, self.rect.centery, self.rad//2, random.choice((-1,1)) * (self.vx + random.randint(-self.xchange, self.xchange)), random.choice((-1,1)) * (self.vy + random.randint(-self.ychange, -self.ychange)), self.color, self.split_times - 1, self.split_into)
+                self.game.ballGroup.add(ball)
         else:
             self.kill()
-        if(not ballGroup):
-            gameWon(K_SPACE, ord('n'))
+        if(not self.game.ballGroup):
+            self.game.gameWon(K_SPACE, ord('n'))
 
 
 
@@ -534,17 +544,10 @@ class Ball(pygame.sprite.Sprite):
             gameFolder = "levels", startingLevel = 1,
             widthcheck = None, heightcheck = None,
             fps = 120, gravitation = 100,
-            two_player = False, show_fps = False, ball_debug = False, dirty = False):
+            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Awesome game! :D"):
+
 """
 
-game = Game(800, 650, 6, heightcheck = 600)
-game.setup()
-game.startMenu()
+game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", two_player = True, show_fps = True)
+game.newGame()
 
-
-WINDOWWIDTH = 800
-WINDOWHEIGHT = 650
-WIDTHCHECK = WINDOWWIDTH
-HEIGHTCHECK = WINDOWHEIGHT - 50
-FPS = 0
-GRAVITATION = 100
