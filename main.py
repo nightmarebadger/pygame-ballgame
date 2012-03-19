@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 2:38:49
+* Last Modified : 19.3.2012 2:45:57
 
 """
 
@@ -45,12 +45,6 @@ def drawText(text, font, surface, x, y, color):
     surface.blit(textobj, textrect)
     return textrect
 
-def gameWon(continueKey, endKey):
-    surface.fill(BLACK)
-    drawText("Yeah, you won!", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//2, WHITE)
-    pygame.display.update()
-    waitForPlayerKeypress(continueKey, endKey)
-
 def waitForPlayerKeypress(continueKey, endKey = K_ESCAPE):
     while True:
         for event in pygame.event.get():
@@ -68,6 +62,34 @@ def waitForPlayerKeypress(continueKey, endKey = K_ESCAPE):
             elif(event.type == MOUSEBUTTONDOWN):
                 if(continueKey == "any" or continueKey == "mouse"):
                     return True
+
+##############################
+#
+#  DIFFERENT "POPUP" SCREENS
+#
+##############################
+
+def gameWon(continueKey, endKey):
+    surface.fill(BLACK)
+    drawText("Yeah, you won!", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//2, WHITE)
+    pygame.display.update()
+    waitForPlayerKeypress(continueKey, endKey)
+
+def getReady():
+    base = WINDOWHEIGHT//2
+    add = 0
+    surface.fill(BLACK)
+    tmprect = drawText("Get ready!", normalFont(80), surface, WINDOWWIDTH//2, base + add, WHITE)
+    add = 100
+    tmprect = drawText("Press any key ... ", normalFont(20), surface, WINDOWWIDTH//2, base + add, WHITE)
+    pygame.display.update()
+    waitForPlayerKeypress("any")
+
+##############################
+#
+#    DIFFERENT MENU PAGES
+#
+##############################
 
 def startMenu():
     repeat = False
@@ -87,6 +109,7 @@ def startMenu():
             elif(event.type == MOUSEBUTTONDOWN):
                 if(event.button == 1):
                     if(newgame_rect.collidepoint(event.pos)):
+                        getReady()
                         gameLoop()
                         repeat = True
                         while_loop = False
@@ -112,7 +135,18 @@ def instructions():
     tmprect = drawText("Careful, you can't move and shoot at the same time ...", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
     pygame.display.update()
     waitForPlayerKeypress("any")
-# Classes
+
+
+
+
+
+
+##############################
+#
+#          CLASSES
+#
+##############################
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, leftKey, rightKey, shootingKey):
         pygame.sprite.Sprite.__init__(self)
