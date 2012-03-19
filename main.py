@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 18.3.2012 22:40:51
+* Last Modified : 19.3.2012 2:38:49
 
 """
 
@@ -19,7 +19,7 @@ from colors import *
 
 #dirty = True
 dirty = False
-count = 0
+show_fps = False
 
 # Constants
 WINDOWWIDTH = 800
@@ -43,6 +43,7 @@ def drawText(text, font, surface, x, y, color):
     textrect = textobj.get_rect()
     textrect.center = (x, y)
     surface.blit(textobj, textrect)
+    return textrect
 
 def gameWon(continueKey, endKey):
     surface.fill(BLACK)
@@ -50,19 +51,67 @@ def gameWon(continueKey, endKey):
     pygame.display.update()
     waitForPlayerKeypress(continueKey, endKey)
 
-def waitForPlayerKeypress(continueKey, endKey):
+def waitForPlayerKeypress(continueKey, endKey = K_ESCAPE):
     while True:
         for event in pygame.event.get():
             if(event.type == QUIT):
                 terminate()
-            if(event.type == KEYDOWN):
+            elif(event.type == KEYDOWN):
                 if(event.key == K_ESCAPE):
                     terminate()
                 elif(event.key == continueKey):
                     return True
                 elif(event.key == endKey):
                     terminate()
+                if(continueKey == "any"):
+                    return True
+            elif(event.type == MOUSEBUTTONDOWN):
+                if(continueKey == "any" or continueKey == "mouse"):
+                    return True
 
+def startMenu():
+    repeat = False
+    while_loop = True
+    surface.fill(BLACK)
+    newgame_rect = drawText("New game", normalFont(60), surface, WINDOWWIDTH//2, WINDOWHEIGHT//3, WHITE)
+    instructions_rect = drawText("Instructions", normalFont(60), surface, WINDOWWIDTH//2, 3/2 * WINDOWHEIGHT//3, WHITE)
+    quit_rect = drawText("Quit", normalFont(60), surface, WINDOWWIDTH//2, 2 * WINDOWHEIGHT//3, WHITE)
+    pygame.display.update()
+    while while_loop:
+        for event in pygame.event.get():
+            if(event.type == QUIT):
+                terminate()
+            elif(event.type == KEYDOWN):
+                if(event.key == K_ESCAPE):
+                    terminate()
+            elif(event.type == MOUSEBUTTONDOWN):
+                if(event.button == 1):
+                    if(newgame_rect.collidepoint(event.pos)):
+                        gameLoop()
+                        repeat = True
+                        while_loop = False
+                    elif(instructions_rect.collidepoint(event.pos)):
+                        instructions()
+                        repeat = True
+                        while_loop = False
+                    elif(quit_rect.collidepoint(event.pos)):
+                        terminate()
+    if(repeat):
+        startMenu()
+
+def instructions():
+    base = WINDOWHEIGHT//2 - 77
+    add = 0
+    surface.fill(BLACK)
+    tmprect = drawText("Use arrow keys to move", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
+    add += 1.5 * tmprect.height
+    tmprect = drawText("and space to shoot.", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
+    add += 1.5 * tmprect.height
+    tmprect = drawText("Destroy all balls while dodging them!", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
+    add += 1.5 * tmprect.height
+    tmprect = drawText("Careful, you can't move and shoot at the same time ...", normalFont(40), surface, WINDOWWIDTH//2, base + add, WHITE)
+    pygame.display.update()
+    waitForPlayerKeypress("any")
 # Classes
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, leftKey, rightKey, shootingKey):
@@ -282,56 +331,62 @@ for i in range(1):
     ball = Ball(random.randint(r, WIDTHCHECK-r), random.randint(r, HEIGHTCHECK-r), r, random.randint(-200, 200), random.randint(-200, 200), color[random.randint(0,2)], 2, 2)
     ballGroup.add(ball)
 
-# Game loop
-playing = True
-while playing:
-    time = clock.tick(FPS)
-    count += time
-    if(count >= 1000):
-        print(clock.get_fps())
+
+
+def gameLoop():
+    playing = True
+    if(show_fps):
         count = 0
-    for event in pygame.event.get():
-        if(event.type == QUIT):
-            terminate()
-        elif(event.type == KEYDOWN):
-            if(event.key == K_ESCAPE):
+    while playing:
+        time = clock.tick(FPS)
+        if(show_fps):
+            count += time
+            if(count >= 1000):
+                print(clock.get_fps())
+                count = 0
+        for event in pygame.event.get():
+            if(event.type == QUIT):
                 terminate()
-            for ply in playerGroup:
-                if(event.key == ply.leftKey):
-                    ply.vx -= 1
-                elif(event.key == ply.rightKey):
-                    ply.vx += 1
-                elif(event.key == ply.shootingKey):
-                    ply.shooting = True
-        elif(event.type == KEYUP):
-            for ply in playerGroup:
-                if(event.key == ply.leftKey):
-                    ply.vx += 1
-                elif(event.key == ply.rightKey):
-                    ply.vx -= 1
-                elif(event.key == ply.shootingKey):
-                    ply.shooting = False
-    
+            elif(event.type == KEYDOWN):
+                if(event.key == K_ESCAPE):
+                    terminate()
+                for ply in playerGroup:
+                    if(event.key == ply.leftKey):
+                        ply.vx -= 1
+                    elif(event.key == ply.rightKey):
+                        ply.vx += 1
+                    elif(event.key == ply.shootingKey):
+                        ply.shooting = True
+            elif(event.type == KEYUP):
+                for ply in playerGroup:
+                    if(event.key == ply.leftKey):
+                        ply.vx += 1
+                    elif(event.key == ply.rightKey):
+                        ply.vx -= 1
+                    elif(event.key == ply.shootingKey):
+                        ply.shooting = False
+        
 
-    # Update all groups
-    ballGroup.update(time/1000)
-    playerGroup.update(time/1000)
-    arrowGroup.update(time/1000)
+        # Update all groups
+        ballGroup.update(time/1000)
+        playerGroup.update(time/1000)
+        arrowGroup.update(time/1000)
 
-    # Drawing
-    
-    if(dirty):
-        rect1 = playerGroup.draw(surface)
-        rect2 = ballGroup.draw(surface)
-        rect3 = arrowGroup.draw(surface)
+        # Drawing
+        
+        if(dirty):
+            rect1 = playerGroup.draw(surface)
+            rect2 = ballGroup.draw(surface)
+            rect3 = arrowGroup.draw(surface)
 
-        pygame.display.update(rect1 + rect2 + rect3)
-        playerGroup.clear(surface, BACKGROUND)
-        ballGroup.clear(surface, BACKGROUND)
-    else:
-        surface.blit(BACKGROUND, (0, 0))
-        playerGroup.draw(surface)
-        ballGroup.draw(surface)
-        arrowGroup.draw(surface)
-        pygame.display.update()
+            pygame.display.update(rect1 + rect2 + rect3)
+            playerGroup.clear(surface, BACKGROUND)
+            ballGroup.clear(surface, BACKGROUND)
+        else:
+            surface.blit(BACKGROUND, (0, 0))
+            playerGroup.draw(surface)
+            ballGroup.draw(surface)
+            arrowGroup.draw(surface)
+            pygame.display.update()
 
+startMenu()
