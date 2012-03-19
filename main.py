@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 19:38:04
+* Last Modified : 19.3.2012 21:46:56
 
 """
 
@@ -20,14 +20,15 @@ from colors import *
 
 # Constants
 
-
+pygame.font.init() 
 
 def terminate():
     pygame.quit()
     sys.exit()
 
 def normalFont(size):
-    return pygame.font.SysFont(None, size)
+    font_name = "arial"
+    return pygame.font.SysFont(font_name, size)
 
 def drawText(text, font, surface, x, y, color):
     textobj = font.render(text, 1, color)
@@ -247,6 +248,9 @@ class Game:
                 elif(event.type == KEYDOWN):
                     if(event.key == K_ESCAPE):
                         terminate()
+                    elif(event.key == ord('f')):
+                        count = 0
+                        self.show_fps = not self.show_fps
                     for ply in self.playerGroup:
                         if(event.key == ply.leftKey):
                             ply.left = True
@@ -622,6 +626,6 @@ class Ball(pygame.sprite.Sprite):
 
 """
 
-game = Game(800, 650, 2, heightcheck = 600, caption = "Ball game", backgroundCount = 4)
+game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", backgroundCount = 4)
 game.startGame()
 
