@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 3:39:26
+* Last Modified : 19.3.2012 3:48:01
 
 """
 
@@ -21,6 +21,7 @@ from colors import *
 dirty = False
 show_fps = False
 ball_debug = False
+two_player = True
 
 # Constants
 WINDOWWIDTH = 800
@@ -201,12 +202,19 @@ def readLevel(name):
 ##############################
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, speed, leftKey, rightKey, shootingKey):
+    def __init__(self, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
         pygame.sprite.Sprite.__init__(self)
-        self.image_left = pygame.image.load("images/player/ply1l.png")
-        self.image_right = pygame.image.load("images/player/ply1r.png")
-        self.image_normal = pygame.image.load("images/player/ply1n.png")
-        self.image_shooting = pygame.image.load("images/player/ply1s.png")
+        if(player_number == 1):
+            self.image_left = pygame.image.load("images/player/ply1l.png")
+            self.image_right = pygame.image.load("images/player/ply1r.png")
+            self.image_normal = pygame.image.load("images/player/ply1n.png")
+            self.image_shooting = pygame.image.load("images/player/ply1s.png")
+        else:
+            self.image_left = pygame.image.load("images/player/ply2l.png")
+            self.image_right = pygame.image.load("images/player/ply2r.png")
+            self.image_normal = pygame.image.load("images/player/ply2n.png")
+            self.image_shooting = pygame.image.load("images/player/ply2s.png")
+
         self.image = self.image_normal
         self.rect = self.image.get_rect()
         self.rect.midbottom = (x, y)
@@ -258,7 +266,9 @@ class Player(pygame.sprite.Sprite):
                     self.move = 0
 
         if(self.hitBalls(ballGroup)):
-            terminate()
+            self.kill()
+            if(not playerGroup):
+                terminate()
         if(self.shooting and self.arrow == None):
             self.shoot()
         if(not self.shooting and self.arrow != None):
@@ -482,11 +492,16 @@ def gameLoop():
             arrowGroup.draw(surface)
             pygame.display.update()
 
+if(not two_player):
+    ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+    playerGroup.add(ply)
+else:
+    ply = Player(3 * WINDOWWIDTH//4, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+    playerGroup.add(ply)
+    ply = Player(WINDOWWIDTH//4, WINDOWHEIGHT-50, 300, ord('a'), ord('d'), ord('1'), 2)
+    playerGroup.add(ply)
 
-ply = Player(WINDOWWIDTH//2, WINDOWHEIGHT-50, 300, K_LEFT, K_RIGHT, K_SPACE)
-playerGroup.add(ply)
-
-readLevel("levels/level2.lvl")
+readLevel("levels/level1.lvl")
 
 
 startMenu()
