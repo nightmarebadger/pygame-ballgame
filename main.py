@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 21:46:56
+* Last Modified : 19.3.2012 22:18:52
 
 """
 
@@ -19,16 +19,24 @@ from colors import *
 
 
 # Constants
-
-pygame.font.init() 
+font_debug = False
 
 def terminate():
     pygame.quit()
     sys.exit()
 
-def normalFont(size):
-    font_name = "arial"
-    return pygame.font.SysFont(font_name, size)
+def normalFont(size, font_name = "menu_font"):
+
+    if(font_debug):
+        print("------------")
+        print(size)
+        print(pygame.font.Font("fonts/{0}.ttf".format(font_name), size).get_height())
+        print(pygame.font.SysFont(None, size).get_height())
+        print(pygame.font.Font("fonts/{0}.ttf".format(font_name), int(size * 0.54)).get_height())
+    try:
+        return pygame.font.Font("fonts/{0}.ttf".format(font_name), size * 0.54)
+    except:
+        return pygame.font.Font(None, size)
 
 def drawText(text, font, surface, x, y, color):
     textobj = font.render(text, 1, color)
@@ -336,7 +344,7 @@ class Game:
         base = self.windowheight//2 - 77
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("Use arrow keys to move", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        tmprect = drawText("Use arrow keys to move", normalFont(40, None), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 1.5 * tmprect.height
         tmprect = drawText("and space to shoot.", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 1.5 * tmprect.height
