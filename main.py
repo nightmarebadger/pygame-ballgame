@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 17:27:59
+* Last Modified : 19.3.2012 19:38:04
 
 """
 
@@ -22,7 +22,6 @@ from colors import *
 
 
 
-# Functions
 def terminate():
     pygame.quit()
     sys.exit()
@@ -39,12 +38,6 @@ def drawText(text, font, surface, x, y, color):
 
 
 
-##############################
-#
-#    DIFFERENT MENU PAGES
-#
-##############################
-
 
 
 
@@ -60,7 +53,7 @@ class Game:
             gameFolder = "levels", startingLevel = 1,
             widthcheck = None, heightcheck = None,
             fps = 120, gravitation = 100,
-            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Awesome game! :D"):
+            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Awesome game! :D", backgroundCount = 1):
         
         # Base game options
         self.windowwidth = windowwidth
@@ -82,6 +75,7 @@ class Game:
         self.fps = fps
         self.gravitation = gravitation
         self.two_player = two_player
+        self.backgroundCount = backgroundCount
 
         # Debug options
         self.show_fps = show_fps
@@ -91,20 +85,39 @@ class Game:
         # Caption
         self.caption = caption
 
-    def newGame(self):
+        # Score
+        self.score = 0
+
+    def startGame(self):
         self.setup()
-        self.readLevel()
         self.startMenu()
-#        self.gameLoop()
 
+    def newGame(self):
+        self.currentLevel = self.startingLevel
+        self.gameReset()
+        self.getReady()
+        while True:
+            self.levelReset()
+            self.gameLoop()
+            if(self.levelwon):
+                self.currentLevel += 1
+                if(self.currentLevel > self.endingLevel):
+                    self.gameWon()
+                    return True
+                self.levelWon()
+            elif(self.levellost):
+                self.gameLost()
+                return True
+        
 
-    def setup(self):
+    def setup(self, reset = False):
         # Pygame stuff setup
         pygame.init()
         self.clock = pygame.time.Clock()
         self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
         pygame.display.set_caption(self.caption)
-        self.background = pygame.image.load("images/background/1.png").convert()
+        self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
+
         if(self.dirty):
             self.surface.blit(self.background, (0,0))
             pygame.display.update()
@@ -128,6 +141,29 @@ class Game:
             self.playerGroup.add(ply)
             ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
             self.playerGroup.add(ply)
+
+    def levelReset(self):
+        self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
+        self.playerGroup.empty()
+        self.ballGroup.empty()
+        self.arrowGroup.empty()
+
+        if(self.dirty):
+            self.surface.blit(self.background, (0,0))
+            pygame.display.update()
+
+        if(not self.two_player):
+            ply = Player(self, self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            self.playerGroup.add(ply)
+        else:
+            ply = Player(self, 3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            self.playerGroup.add(ply)
+            ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
+            self.playerGroup.add(ply)
+
+    def gameReset(self):
+        self.score = 0
+        self.levelReset()
 
     def readLevel(self):
         
@@ -190,11 +226,15 @@ class Game:
                         return True
 
     def gameLoop(self):
-        playing = True
+        self.levelwon = False
+        self.levellost = False
+        self.continue_playing = True
+        self.readLevel()
         if(self.show_fps):
             count = 0
         self.clock.tick()
-        while playing:
+        while self.continue_playing:
+            #print("Playing... playing...!")
             time = self.clock.tick(self.fps)
             if(self.show_fps):
                 count += time
@@ -247,7 +287,12 @@ class Game:
                 self.arrowGroup.draw(self.surface)
                 pygame.display.update()
 
-################
+    ##############################
+    #
+    #    DIFFERENT MENU PAGES
+    #
+    ##############################
+
 
     def startMenu(self):
         repeat = False
@@ -265,17 +310,15 @@ class Game:
                     if(event.key == K_ESCAPE):
                         terminate()
                     elif(event.key == K_SPACE):
-                        self.getReady()
-                        self.gameLoop()
-                        repeat = True
-                        while_loop = False
+                        if(self.newGame()):
+                            repeat = True
+                            while_loop = False
                 elif(event.type == MOUSEBUTTONDOWN):
                     if(event.button == 1):
                         if(newgame_rect.collidepoint(event.pos)):
-                            self.getReady()
-                            self.gameLoop()
-                            repeat = True
-                            while_loop = False
+                            if(self.newGame()):
+                                repeat = True
+                                while_loop = False
                         elif(instructions_rect.collidepoint(event.pos)):
                             self.instructions()
                             repeat = True
@@ -305,11 +348,37 @@ class Game:
     #
     ##############################
 
-    def gameWon(self, continueKey, endKey):
+    def gameWon(self):
+        base = self.windowheight//2
+        add = 0
         self.surface.fill(BLACK)
-        drawText("Yeah, you won!", normalFont(60), self.surface, self.windowwidth//2, self.windowheight//2, WHITE)
+        tmprect = drawText("You won the game!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        add = 100
+        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
-        self.waitForPlayerKeypress(continueKey, endKey)
+        self.waitForPlayerKeypress("any")
+
+    def gameLost(self):
+        base = self.windowheight//2
+        add = 0
+        self.surface.fill(BLACK)
+        tmprect = drawText("You lost ... :(", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        add = 100
+        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        self.waitForPlayerKeypress("any")
+
+    def levelWon(self):
+        base = self.windowheight//2
+        add = 0
+        self.surface.fill(BLACK)
+        tmprect = drawText("Level won!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 80
+        tmprect = drawText("Only {0} levels to go".format(self.endingLevel - self.currentLevel + 1), normalFont(30), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 20
+        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        self.waitForPlayerKeypress("any")
 
     def getReady(self):
         base = self.windowheight//2
@@ -320,6 +389,7 @@ class Game:
         tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
+
 
 ##############################
 #
@@ -395,7 +465,9 @@ class Player(pygame.sprite.Sprite):
         if(self.hitBalls(self.game.ballGroup)):
             self.kill()
             if(not self.game.playerGroup):
-                terminate()
+                self.game.levellost = True
+                self.game.continue_playing = False
+#                terminate()
         if(self.shooting and self.arrow == None):
             self.shoot()
         if(not self.shooting and self.arrow != None):
@@ -534,7 +606,9 @@ class Ball(pygame.sprite.Sprite):
         else:
             self.kill()
         if(not self.game.ballGroup):
-            self.game.gameWon(K_SPACE, ord('n'))
+            self.game.levelwon = True
+            self.game.continue_playing = False
+#            self.game.gameWon(K_SPACE, ord('n'))
 
 
 
@@ -548,6 +622,6 @@ class Ball(pygame.sprite.Sprite):
 
 """
 
-game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", two_player = True, show_fps = True)
-game.newGame()
+game = Game(800, 650, 2, heightcheck = 600, caption = "Ball game", backgroundCount = 4)
+game.startGame()
 
