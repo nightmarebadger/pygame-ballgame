@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 2:45:57
+* Last Modified : 19.3.2012 2:47:39
 
 """
 
@@ -106,6 +106,11 @@ def startMenu():
             elif(event.type == KEYDOWN):
                 if(event.key == K_ESCAPE):
                     terminate()
+                elif(event.key == K_SPACE):
+                    getReady()
+                    gameLoop()
+                    repeat = True
+                    while_loop = False
             elif(event.type == MOUSEBUTTONDOWN):
                 if(event.button == 1):
                     if(newgame_rect.collidepoint(event.pos)):
