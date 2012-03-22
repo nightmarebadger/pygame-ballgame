@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 19.3.2012 22:18:52
+* Last Modified : 22.3.2012 3:33:01
 
 """
 
@@ -58,6 +58,29 @@ def drawText(text, font, surface, x, y, color):
 ##############################
 
 class Game:
+    class Tick(pygame.sprite.Sprite):
+        def __init__(self, x, y, ticked, width = 2, size = 20):
+            pygame.sprite.Sprite.__init__(self)
+            self.ticked = ticked
+            self.width = width
+            self.size = size
+            self.image = pygame.Surface((self.size, self.size))
+            self.rect = self.image.get_rect()
+            self.rect.center = (x,y)
+            
+
+        def read(self):
+            pass
+        
+        def update(self):
+            self.image.fill(WHITE)
+            self.image.fill(BLACK, rect=(self.width, self.width, self.rect.width - 2*self.width, self.rect.height - 2*self.width))
+            if(self.ticked):
+                pygame.draw.line(self.image, WHITE, (0,0), (self.size, self.size), self.width)
+                pygame.draw.line(self.image, WHITE, (0, self.size - 1), (self.size - 1, 0), self.width)
+
+
+
     def __init__(self, windowwidth, windowheight, endingLevel,
             gameFolder = "levels", startingLevel = 1,
             widthcheck = None, heightcheck = None,
@@ -310,9 +333,10 @@ class Game:
         repeat = False
         while_loop = True
         self.surface.fill(BLACK)
-        newgame_rect = drawText("New game", normalFont(60), self.surface, self.windowwidth//2, self.windowheight//3, WHITE)
-        instructions_rect = drawText("Instructions", normalFont(60), self.surface, self.windowwidth//2, 3/2 * self.windowheight//3, WHITE)
-        quit_rect = drawText("Quit", normalFont(60), self.surface, self.windowwidth//2, 2 * self.windowheight//3, WHITE)
+        newgame_rect = drawText("New game", normalFont(60), self.surface, self.windowwidth//2, 1/4 * self.windowheight, WHITE)
+        instructions_rect = drawText("Instructions", normalFont(60), self.surface, self.windowwidth//2, 5/12 * self.windowheight, WHITE)
+        options_rect = drawText("Options", normalFont(60), self.surface, self.windowwidth//2, 7/12 * self.windowheight, WHITE)
+        quit_rect = drawText("Quit", normalFont(60), self.surface, self.windowwidth//2, 3/4 * self.windowheight, WHITE)
         pygame.display.update()
         while while_loop:
             for event in pygame.event.get():
@@ -335,6 +359,10 @@ class Game:
                             self.instructions()
                             repeat = True
                             while_loop = False
+                        elif(options_rect.collidepoint(event.pos)):
+                            self.options()
+                            repeat = True
+                            while_loop = False
                         elif(quit_rect.collidepoint(event.pos)):
                             terminate()
         if(repeat):
@@ -351,6 +379,18 @@ class Game:
         tmprect = drawText("Destroy all balls while dodging them!", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 1.5 * tmprect.height
         tmprect = drawText("Careful, you can't move and shoot at the same time ...", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        self.waitForPlayerKeypress("any")
+
+    def options(self):
+        self.surface.fill(BLACK)
+        tickGroup = pygame.sprite.RenderPlain()
+        tickGroup.add(self.Tick(300,300,False))
+        tickGroup.add(self.Tick(500,500,True))
+
+        tickGroup.update()
+        tickGroup.draw(self.surface)
+        print(tickGroup)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
 
