@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 22.3.2012 3:33:01
+* Last Modified : 23.3.2012 0:41:42
 
 """
 
@@ -38,10 +38,19 @@ def normalFont(size, font_name = "menu_font"):
     except:
         return pygame.font.Font(None, size)
 
-def drawText(text, font, surface, x, y, color):
+def drawText(text, font, surface, x, y, color, option="center"):
     textobj = font.render(text, 1, color)
     textrect = textobj.get_rect()
-    textrect.center = (x, y)
+    if(option == "center"):
+        textrect.center = (x, y)
+    elif(option == "left"):
+        textrect.left = x
+        textrect.centery = y
+    elif(option == "right"):
+        textrect.right = x
+        textrect.centery = y
+    else:
+        textrect.center = (x, y)
     surface.blit(textobj, textrect)
     return textrect
 
@@ -59,8 +68,9 @@ def drawText(text, font, surface, x, y, color):
 
 class Game:
     class Tick(pygame.sprite.Sprite):
-        def __init__(self, x, y, ticked, width = 2, size = 20):
+        def __init__(self, name, x, y, ticked, width = 2, size = 25):
             pygame.sprite.Sprite.__init__(self)
+            self.name = name
             self.ticked = ticked
             self.width = width
             self.size = size
@@ -69,8 +79,8 @@ class Game:
             self.rect.center = (x,y)
             
 
-        def read(self):
-            pass
+        def clicked(self):
+            self.ticked = not self.ticked
         
         def update(self):
             self.image.fill(WHITE)
@@ -85,7 +95,7 @@ class Game:
             gameFolder = "levels", startingLevel = 1,
             widthcheck = None, heightcheck = None,
             fps = 120, gravitation = 100,
-            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Awesome game! :D", backgroundCount = 1):
+            two_player = False, show_fps = False, ball_debug = False, dirty = False, caption = "Ball game", backgroundCount = 1, configFile = "configuration/game.ini", fullscreen = False):
         
         # Base game options
         self.windowwidth = windowwidth
@@ -108,6 +118,7 @@ class Game:
         self.gravitation = gravitation
         self.two_player = two_player
         self.backgroundCount = backgroundCount
+        self.fullscreen = fullscreen
 
         # Debug options
         self.show_fps = show_fps
@@ -120,11 +131,77 @@ class Game:
         # Score
         self.score = 0
 
+        # Config file
+        self.configFile = configFile
+        self.applyConfig(self.readConfig())
+
+
+    def applyConfig(self, dic):
+        def tf(s):
+            if(s in ["1", "true"]):
+                return True
+            return False
+
+        if(dic):
+            for i in dic:
+                if(i == "width"):
+                    self.windowwidth = int(dic[i])
+                elif(i == "height"):
+                    self.windowheight = int(dic[i])
+                elif(i == "endinglevel"):
+                    self.endingLevel = int(dic[i])
+                elif(i == "gamefolder"):
+                    self.gameFolder = dic[i]
+                elif(i == "startinglevel"):
+                    self.startingLevel = int(dic[i])
+                elif(i == "widthcheck"):
+                    self.widthcheck = int(dic[i])
+                elif(i == "heightcheck"):
+                    self.heightcheck = int(dic[i])
+                elif(i == "fps"):
+                    self.fps = int(dic[i])
+                elif(i == "gravitation"):
+                    self.gravitation = int(dic[i])
+                elif(i == "twoplayer"):
+                    self.two_player = tf(dic[i])
+                elif(i == "showfps"):
+                    self.show_fps = tf(dic[i])
+                elif(i == "balldebug"):
+                    self.ball_debug = tf(dic[i])
+                elif(i == "dirty"):
+                    self.dirty = tf(dic[i])
+                elif(i == "caption"):
+                    self.caption = dic[i]
+                elif(i == "backgroundcount"):
+                    self.backgroundCount = int(dic[i])
+                elif(i == "fullscreen"):
+                    self.fullscreen = tf(dic[i])
+
+
+    def readConfig(self):
+        foo = {}
+        options = ["width", "height", "endinglevel", "gamefolder", "startinglevel", "widthcheck", "heightcheck", "fps", "gravitation", "twoplayer", "showfps", "balldebug", "dirty", "caption", "backgroundCount", "fullscreen"]
+        try:
+            with open(self.configFile, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if(len(line) > 0 and line[0] != '#'):
+                        bar = line.split('=')
+                        bar[0] = bar[0].strip().lower()
+                        if(bar[0] in options):
+                            foo[bar[0]] = bar[1].strip()
+                        #print(line)
+            return foo
+        except:
+            print("Ni fajla!")
+            return None
+
     def startGame(self):
         self.setup()
         self.startMenu()
 
     def newGame(self):
+        pygame.mouse.set_visible(False)
         self.currentLevel = self.startingLevel
         self.gameReset()
         self.getReady()
@@ -146,7 +223,10 @@ class Game:
         # Pygame stuff setup
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
+        if(self.fullscreen):
+            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), FULLSCREEN)
+        else:
+            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
         pygame.display.set_caption(self.caption)
         self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
 
@@ -330,6 +410,7 @@ class Game:
 
 
     def startMenu(self):
+        pygame.mouse.set_visible(True)
         repeat = False
         while_loop = True
         self.surface.fill(BLACK)
@@ -372,7 +453,7 @@ class Game:
         base = self.windowheight//2 - 77
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("Use arrow keys to move", normalFont(40, None), self.surface, self.windowwidth//2, base + add, WHITE)
+        tmprect = drawText("Use arrow keys to move", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 1.5 * tmprect.height
         tmprect = drawText("and space to shoot.", normalFont(40), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 1.5 * tmprect.height
@@ -385,14 +466,57 @@ class Game:
     def options(self):
         self.surface.fill(BLACK)
         tickGroup = pygame.sprite.RenderPlain()
-        tickGroup.add(self.Tick(300,300,False))
-        tickGroup.add(self.Tick(500,500,True))
+       
+        hstart = 1/4 * self.windowheight
+        hspace = 100
+        vstart = 1/2 * self.windowwidth + 50 
+        vspace = 60
+
+
+        drawText("Fullscreen", normalFont(50), self.surface, vstart, hstart, WHITE, option = "right")
+        drawText("Show FPS", normalFont(50), self.surface, vstart, hspace + hstart, WHITE, option = "right")
+        drawText("Two players", normalFont(50), self.surface, vstart, 2*hspace + hstart, WHITE, option = "right")
+
+        fullscreen = self.Tick("fullscreen", vstart + vspace, hstart, True)
+        tickGroup.add(fullscreen)
+        showfps = self.Tick("showfps", vstart + vspace, hspace + hstart, True)
+        tickGroup.add(showfps)
+        twoplayer = self.Tick("twoplayer", vstart + vspace, 2*hspace + hstart, True)
+        tickGroup.add(twoplayer)
+
+        cancel = drawText("Cancel", normalFont(50), self.surface, 1/4 * self.windowwidth, self.windowheight - 100, WHITE) 
+        accept = drawText("Accept", normalFont(50), self.surface, 3/4 * self.windowwidth, self.windowheight - 100, WHITE) 
+
 
         tickGroup.update()
         tickGroup.draw(self.surface)
-        print(tickGroup)
         pygame.display.update()
-        self.waitForPlayerKeypress("any")
+
+        while True:
+            for event in pygame.event.get():
+                if(event.type == QUIT):
+                    terminate()
+                elif(event.type == KEYDOWN):
+                    if(event.key == K_ESCAPE):
+                        terminate()
+                elif(event.type == MOUSEBUTTONDOWN):
+                    if(event.button == 1):
+                        if(fullscreen.rect.collidepoint(event.pos)):
+                            fullscreen.clicked()
+                            fullscreen.update()
+                            tickGroup.draw(self.surface)
+                            pygame.display.update()
+                        elif(showfps.rect.collidepoint(event.pos)):
+                            showfps.clicked()
+                            showfps.update()
+                            tickGroup.draw(self.surface)
+                            pygame.display.update()
+                        elif(twoplayer.rect.collidepoint(event.pos)):
+                            twoplayer.clicked()
+                            twoplayer.update()
+                            tickGroup.draw(self.surface)
+                            pygame.display.update()
+
 
     ##############################
     #
