@@ -8,12 +8,12 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 23.3.2012 1:03:20
+* Last Modified : 23.3.2012 1:52:46
 
 """
 
 from __future__ import division, print_function
-import pygame, random, sys
+import pygame, random, sys, shutil
 from pygame.locals import *
 from colors import *
 
@@ -195,6 +195,31 @@ class Game:
         except:
             print("Ni fajla!")
             return None
+
+    def applyTicktoConfig(self, changes):
+        def tf(s):
+            if(s):
+                return '1'
+            return '0'
+        shutil.copy(self.configFile, self.configFile + ".backup")
+        with open(self.configFile + ".backup", 'r') as base:
+            with open(self.configFile, 'w') as new:
+                for line in base:
+                    write = True
+                    foo = line.strip()
+                    if(len(foo) > 0 and foo[0] != '#'):
+                        bar = foo.split('=')
+                        bar[0] = bar[0].strip().lower()
+                        for i in changes.copy():
+                            if(bar[0] == i):
+                                new.write("{0} = {1}\n".format(i, tf(changes[i])))
+                                write = False
+                                del changes[i]
+                    if(write):
+                        new.write(line)
+                for i in changes:
+                    new.write("{0} = {1}\n".format(i, tf(changes[i])))
+
 
     def startGame(self):
         self.setup()
@@ -496,11 +521,9 @@ class Game:
         cancel = drawText("Cancel", normalFont(50), self.surface, 1/4 * self.windowwidth, self.windowheight - 100, WHITE) 
         accept = drawText("Accept", normalFont(50), self.surface, 3/4 * self.windowwidth, self.windowheight - 100, WHITE) 
 
-#        readTicks(tickGroup, self.readConfig())
         tickGroup.update()
         tickGroup.draw(self.surface)
         pygame.display.update()
-#        self.applyConfig(self.readConfig())
 
         while_bool = True
         while while_bool:
@@ -530,7 +553,11 @@ class Game:
                         elif(cancel.collidepoint(event.pos)):
                             while_bool = False
                         elif(accept.collidepoint(event.pos)):
+                            foo = {}
                             applyTicks(tickGroup)
+                            for i in tickGroup:
+                                foo[i.name] = i.ticked
+                            self.applyTicktoConfig(foo)
                             while_bool = False
                             
 
