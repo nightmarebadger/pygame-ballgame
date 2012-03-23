@@ -8,7 +8,7 @@
 
 * Creation Date : 17-03-2012
 
-* Last Modified : 23.3.2012 0:41:42
+* Last Modified : 23.3.2012 1:03:20
 
 """
 
@@ -464,6 +464,15 @@ class Game:
         self.waitForPlayerKeypress("any")
 
     def options(self):
+        def applyTicks(ticks):
+            for i in ticks:
+                if(i.name == "fullscreen"):
+                    self.fullscreen = i.ticked
+                elif(i.name == "showfps"):
+                    self.show_fps = i.ticked
+                elif(i.name == "twoplayer"):
+                    self.two_player = i.ticked
+
         self.surface.fill(BLACK)
         tickGroup = pygame.sprite.RenderPlain()
        
@@ -477,22 +486,24 @@ class Game:
         drawText("Show FPS", normalFont(50), self.surface, vstart, hspace + hstart, WHITE, option = "right")
         drawText("Two players", normalFont(50), self.surface, vstart, 2*hspace + hstart, WHITE, option = "right")
 
-        fullscreen = self.Tick("fullscreen", vstart + vspace, hstart, True)
+        fullscreen = self.Tick("fullscreen", vstart + vspace, hstart, self.fullscreen)
         tickGroup.add(fullscreen)
-        showfps = self.Tick("showfps", vstart + vspace, hspace + hstart, True)
+        showfps = self.Tick("showfps", vstart + vspace, hspace + hstart, self.show_fps)
         tickGroup.add(showfps)
-        twoplayer = self.Tick("twoplayer", vstart + vspace, 2*hspace + hstart, True)
+        twoplayer = self.Tick("twoplayer", vstart + vspace, 2*hspace + hstart, self.two_player)
         tickGroup.add(twoplayer)
 
         cancel = drawText("Cancel", normalFont(50), self.surface, 1/4 * self.windowwidth, self.windowheight - 100, WHITE) 
         accept = drawText("Accept", normalFont(50), self.surface, 3/4 * self.windowwidth, self.windowheight - 100, WHITE) 
 
-
+#        readTicks(tickGroup, self.readConfig())
         tickGroup.update()
         tickGroup.draw(self.surface)
         pygame.display.update()
+#        self.applyConfig(self.readConfig())
 
-        while True:
+        while_bool = True
+        while while_bool:
             for event in pygame.event.get():
                 if(event.type == QUIT):
                     terminate()
@@ -516,6 +527,12 @@ class Game:
                             twoplayer.update()
                             tickGroup.draw(self.surface)
                             pygame.display.update()
+                        elif(cancel.collidepoint(event.pos)):
+                            while_bool = False
+                        elif(accept.collidepoint(event.pos)):
+                            applyTicks(tickGroup)
+                            while_bool = False
+                            
 
 
     ##############################
