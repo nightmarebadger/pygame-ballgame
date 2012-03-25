@@ -1,0 +1,10 @@
+# This is a commentary
+# Balls, use this form: 
+# x, y, rad, vx, vy, color, split_times, split_into; use spaces in between
+# If you want to randomize, use (start,stop) for the value you want to randomize
+# If you want to make it a random +-, use * before the value
+
+(50,750) (50,300) 50 *(50,150) *(50,150) red 2 1
+(50,750) (50,300) 50 *(50,150) *(50,150) red 2 1
+(50,750) (50,300) 50 *(50,150) *(50,150) red 2 1
+(50,750) (50,300) 50 *(50,150) *(50,150) red 2 1

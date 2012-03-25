@@ -1,0 +1,9 @@
+# This is a commentary
+# Balls, use this form: 
+# x, y, rad, vx, vy, color, split_times, split_into; use spaces in between
+# If you want to randomize, use (start,stop) for the value you want to randomize
+# If you want to make it a random +-, use * before the value
+
+(100,200) (100,200) 100 0 500 blue 3 2
+400 200 200 75 -50 red 1 2
+(450,600) (50,150) 50 300 0 green 1 4
