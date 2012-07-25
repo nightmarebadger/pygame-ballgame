@@ -264,10 +264,12 @@ class Game:
             self.playerGroup = pygame.sprite.RenderUpdates()
             self.ballGroup = pygame.sprite.RenderUpdates()
             self.arrowGroup = pygame.sprite.RenderUpdates()
+            self.powerupGroup = pygame.sprite.RenderUpdates()
         else:
             self.playerGroup = pygame.sprite.RenderPlain()
             self.ballGroup = pygame.sprite.RenderPlain()
             self.arrowGroup = pygame.sprite.RenderPlain()
+            self.powerupGroup = pygame.sprite.RenderPlain()
 
         # Player setup
         if(not self.two_player):
@@ -284,6 +286,7 @@ class Game:
         self.playerGroup.empty()
         self.ballGroup.empty()
         self.arrowGroup.empty()
+        self.powerupGroup.empty()
 
         if(self.dirty):
             self.surface.blit(self.background, (0,0))
@@ -408,6 +411,7 @@ class Game:
             self.ballGroup.update(time/1000)
             self.playerGroup.update(time/1000)
             self.arrowGroup.update(time/1000)
+            self.powerupGroup.update(time/1000)
 
             # Drawing
             
@@ -415,16 +419,19 @@ class Game:
                 rect1 = self.playerGroup.draw(self.surface)
                 rect2 = self.ballGroup.draw(self.surface)
                 rect3 = self.arrowGroup.draw(self.surface)
+                rect4 = self.powerupGroup.draw(self.surface)
 
-                pygame.display.update(rect1 + rect2 + rect3)
+                pygame.display.update(rect1 + rect2 + rect3 + rect4)
                 self.playerGroup.clear(self.surface, self.background)
                 self.ballGroup.clear(self.surface, self.background)
                 self.arrowGroup.clear(self.surface, self.background)
+                self.powerupGroup.clear(self.surface, self.background)
             else:
                 self.surface.blit(self.background, (0, 0))
                 self.playerGroup.draw(self.surface)
                 self.ballGroup.draw(self.surface)
                 self.arrowGroup.draw(self.surface)
+                self.powerupGroup.draw(self.surface)
                 pygame.display.update()
 
     ##############################
@@ -572,9 +579,9 @@ class Game:
         base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("You won the game!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("You won the game!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add = 100
-        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
 
@@ -582,9 +589,9 @@ class Game:
         base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("You lost ... :(", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("You lost ... :(", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add = 100
-        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
 
@@ -592,11 +599,11 @@ class Game:
         base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("Level won!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Level won!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 80
-        tmprect = drawText("Only {0} levels to go".format(self.endingLevel - self.currentLevel + 1), normalFont(30), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Only {0} levels to go".format(self.endingLevel - self.currentLevel + 1), normalFont(30), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 20
-        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
 
@@ -604,9 +611,9 @@ class Game:
         base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
-        tmprect = drawText("Get ready!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Get ready!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add = 100
-        tmprect = drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
         self.waitForPlayerKeypress("any")
 
@@ -818,8 +825,10 @@ class Ball(pygame.sprite.Sprite):
             self.vx *= -1
 
     def split(self):
+        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, "neki")
+        self.game.powerupGroup.add(powerup)
         if(self.split_times > 0):
-            self.kill()
+            self.kill()   
             for i in range(self.split_into):
                 ball = Ball(self.game, self.rect.centerx, self.rect.centery, self.rad//2, random.choice((-1,1)) * (self.vx + random.randint(-self.xchange, self.xchange)), random.choice((-1,1)) * (self.vy + random.randint(-self.ychange, -self.ychange)), self.color, self.split_times - 1, self.split_into)
                 self.game.ballGroup.add(ball)
@@ -831,7 +840,39 @@ class Ball(pygame.sprite.Sprite):
 #            self.game.gameWon(K_SPACE, ord('n'))
 
 
+class Powerup(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, name):
+        pygame.sprite.Sprite.__init__(self)
+        self.game = game
+        self.x = x
+        self.y = y
+        self.name = name
+        self.v = 100
+        self.move = 0
+        self.width = 50
+        self.height = 50
+        self.timer = 5
 
+
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.midtop = (self.x, self.y)
+        self.mask = pygame.mask.from_surface(self.image, 0)
+        self.mask.fill()
+        
+    def update(self, time):
+        self.move += self.v * time
+        if(self.rect.bottom < self.game.heightcheck):
+            self.rect.move_ip(0, self.move)
+            self.move -= int(self.move)
+            if(self.rect.bottom < 0):
+                self.rect.bottom = 0
+        else:
+            if(self.timer <= 0):
+                self.kill()
+            self.timer -= time
+       
 
 """
     def __init__(self, windowwidth, windowheight, endingLevel,
