@@ -825,7 +825,8 @@ class Ball(pygame.sprite.Sprite):
             self.vx *= -1
 
     def split(self):
-        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, "neki")
+        
+        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, random.choice(("life", "invisibility", "power")))
         self.game.powerupGroup.add(powerup)
         if(self.split_times > 0):
             self.kill()   
@@ -855,7 +856,14 @@ class Powerup(pygame.sprite.Sprite):
 
 
         self.image = pygame.Surface((self.width, self.height))
-        self.image.fill(BLACK)
+        if(self.name == "life"):
+            self.image.fill(RED)
+        elif(self.name == "invisibility"):
+            self.image.fill(BLUE)
+        elif(self.name == "power"):
+            self.image.fill(GREEN)
+        else:
+            self.image.fill(BLACK)
         self.rect = self.image.get_rect()
         self.rect.midtop = (self.x, self.y)
         self.mask = pygame.mask.from_surface(self.image, 0)
