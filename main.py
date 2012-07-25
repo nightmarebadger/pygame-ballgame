@@ -416,10 +416,11 @@ class Game:
             # Drawing
             
             if(self.dirty):
+                rect4 = self.powerupGroup.draw(self.surface)
                 rect1 = self.playerGroup.draw(self.surface)
                 rect2 = self.ballGroup.draw(self.surface)
                 rect3 = self.arrowGroup.draw(self.surface)
-                rect4 = self.powerupGroup.draw(self.surface)
+                
 
                 pygame.display.update(rect1 + rect2 + rect3 + rect4)
                 self.playerGroup.clear(self.surface, self.background)
@@ -428,10 +429,11 @@ class Game:
                 self.powerupGroup.clear(self.surface, self.background)
             else:
                 self.surface.blit(self.background, (0, 0))
+                self.powerupGroup.draw(self.surface)
                 self.playerGroup.draw(self.surface)
                 self.ballGroup.draw(self.surface)
                 self.arrowGroup.draw(self.surface)
-                self.powerupGroup.draw(self.surface)
+                
                 pygame.display.update()
 
     ##############################
@@ -653,6 +655,13 @@ class Player(pygame.sprite.Sprite):
         self.shooting_speed = 300
         self.left = False
         self.right = False
+        
+        self.invistimerbase = 5
+        self.invistimer = 0
+        self.powerarrowbase = 5
+        self.powerarrow = 0
+        self.powerarrow_betweenbase = 0.5
+        self.powerarrow_between = 0
 
     def update(self, time):
         if(self.left == self.right):
@@ -670,7 +679,16 @@ class Player(pygame.sprite.Sprite):
         elif(self.vx == 0):
             self.image = self.image_normal
 
-        if(not self.shooting):
+        if(self.powerarrow_between > 0):
+            self.powerarrow_between -= time
+        if(self.powerarrow > 0):
+            self.powerarrow -= time
+        if(self.invistimer > 0):
+            self.invistimer -= time
+            
+        self.hitPowerup(self.game.powerupGroup)
+
+        if(not self.shooting or self.powerarrow > 0):
             self.move += self.speed * self.vx * time
             if(self.move > 1 or self.move < 1):
                 # Check if out of bounds
@@ -689,12 +707,15 @@ class Player(pygame.sprite.Sprite):
                     self.rect.right = self.game.widthcheck
                     self.move = 0
 
-        if(self.hitBalls(self.game.ballGroup)):
-            self.kill()
-            if(not self.game.playerGroup):
-                self.game.levellost = True
-                self.game.continue_playing = False
-#                terminate()
+        if(self.invistimer <= 0):
+            if(self.hitBalls(self.game.ballGroup)):
+                self.kill()
+                if(not self.game.playerGroup):
+                    self.game.levellost = True
+                    self.game.continue_playing = False
+            
+            
+
         if(self.shooting and self.arrow == None):
             self.shoot()
         if(not self.shooting and self.arrow != None):
@@ -706,14 +727,31 @@ class Player(pygame.sprite.Sprite):
             if(pygame.sprite.collide_mask(self, b)):
                 return True
         return False
+    
+    def hitPowerup(self, powerups):
+        for p in powerups:
+            if(pygame.sprite.collide_mask(self, p)):
+                p.pickup(self)
+                return True
+        return False
 
     def shoot(self):
-        self.arrow = Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
-        self.game.arrowGroup.add(self.arrow)
+        if(self.powerarrow <= 0):
+            self.arrow = Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
+            self.game.arrowGroup.add(self.arrow)
+        else:
+            if(self.powerarrow_between <= 0):
+                self.game.arrowGroup.add(Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK))
+                self.powerarrow_between = self.powerarrow_betweenbase
+                
+            
+            
 
     def shoot_stop(self):
         self.arrow.kill()
         self.arrow = None
+
+        
 
 class Arrow(pygame.sprite.Sprite):
 
@@ -735,7 +773,10 @@ class Arrow(pygame.sprite.Sprite):
     def update(self, time):
         self.movey += time * self.vy
         if(self.rect.top - int(self.movey) < 0):
-            self.player.shoot_stop()
+            if(self == self.player.arrow):
+                self.player.shoot_stop()
+            else:
+                self.kill()
         else:
             self.image = pygame.Surface((self.rect.width, self.rect.height + int(self.movey)))
             self.image.fill(BLACK)
@@ -750,7 +791,10 @@ class Arrow(pygame.sprite.Sprite):
         for b in balls:
 #            if self.rect.colliderect(b.rect):
             if(pygame.sprite.collide_mask(self, b)):
-                self.player.shoot_stop()
+                if(self == self.player.arrow):
+                    self.player.shoot_stop()
+                else:
+                    self.kill()
                 b.split()
                 return True
         return False
@@ -826,7 +870,7 @@ class Ball(pygame.sprite.Sprite):
 
     def split(self):
         
-        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, random.choice(("life", "invisibility", "power")))
+        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, random.choice(("life", "invisibility", "powerarrow")))
         self.game.powerupGroup.add(powerup)
         if(self.split_times > 0):
             self.kill()   
@@ -860,7 +904,7 @@ class Powerup(pygame.sprite.Sprite):
             self.image.fill(RED)
         elif(self.name == "invisibility"):
             self.image.fill(BLUE)
-        elif(self.name == "power"):
+        elif(self.name == "powerarrow"):
             self.image.fill(GREEN)
         else:
             self.image.fill(BLACK)
@@ -881,6 +925,16 @@ class Powerup(pygame.sprite.Sprite):
                 self.kill()
             self.timer -= time
        
+    def pickup(self, player):
+        if(self.name == "invisibility"):
+            player.invistimer = player.invistimerbase
+            self.kill()
+            print("picked up invis :)")
+        elif(self.name == "powerarrow"):
+            player.powerarrow = player.powerarrowbase
+            player.powerarrow_between = player.powerarrow_betweenbase
+            self.kill()
+            print("picked up powerarrow")
 
 """
     def __init__(self, windowwidth, windowheight, endingLevel,
