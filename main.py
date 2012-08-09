@@ -988,9 +988,23 @@ class Ball(pygame.sprite.Sprite):
             self.vx *= -1
 
     def split(self):
-        
-        powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, random.choice(("life", "invisibility", "powerarrow")))
-        self.game.powerupGroup.add(powerup)
+        foo = random.randint(0,99)
+        """
+        20% chance for a powerup. Out of powerups:
+            50% are powerarrow
+            30% are invisibility
+            20% are life
+        """
+        if(foo < 20):
+            foo = random.randint(0,99)
+            if(foo < 50):
+                type = "powerarrow"
+            elif(foo < 80):
+                type = "invisibility"
+            else:
+                type = "life"
+            powerup = Powerup(self.game, self.rect.centerx, self.rect.bottom - self.rad/5, type)
+            self.game.powerupGroup.add(powerup)
         if(self.split_times > 0):
             self.kill()   
             for i in range(self.split_into):
