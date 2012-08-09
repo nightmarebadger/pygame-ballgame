@@ -668,7 +668,6 @@ class Player(pygame.sprite.Sprite):
     image_normal2 = pygame.image.load("images/player/ply2n.png")
     image_shooting2 = pygame.image.load("images/player/ply2s.png")
     
-    print("Loudam slikce")
     
     
     def __init__(self, game, leftKey, rightKey, shootingKey, player_number = 1, x=None, y=None, speed=300):
@@ -683,15 +682,15 @@ class Player(pygame.sprite.Sprite):
             self.image_shooting = Player.image_shooting1.convert_alpha()
             
             if(self.game.two_player):
-                self.basex2_1 = 3 * self.game.windowwidth//4
-                self.basey2_1 = self.game.windowheight-50
+                self.basex2_1 = 3 * self.game.widthcheck//4
+                self.basey2_1 = self.game.heightcheck
                 if(x == None):
                      x = self.basex2_1
                 if(y == None):
                     y = self.basey2_1
             else:
-                self.basex1 = self.game.windowwidth//2 
-                self.basey1 = self.game.windowheight-50
+                self.basex1 = self.game.widthcheck//2 
+                self.basey1 = self.game.heightcheck
                 if(x == None):
                     x = self.basex1
                 if(y == None):
@@ -702,8 +701,8 @@ class Player(pygame.sprite.Sprite):
             self.image_normal = Player.image_normal2.convert_alpha()
             self.image_shooting = Player.image_shooting2.convert_alpha() 
             
-            self.basex2_2 = self.game.windowwidth//4
-            self.basey2_2 = self.game.windowheight-50
+            self.basex2_2 = self.game.widthcheck//4
+            self.basey2_2 = self.game.heightcheck
             if(x == None):
                 x = self.basex2_2
             if(y == None):
@@ -1027,7 +1026,14 @@ class Powerup(pygame.sprite.Sprite):
         self.width = 50
         self.height = 50
         self.timer = 5
-
+        
+        if(self.x - self.width//2 < 0):
+            self.x = self.width//2
+        if(self.x + self.width//2 > self.game.widthcheck):
+            self.x = self.game.widthcheck - self.width//2
+        
+        if(self.y + self.height > self.game.heightcheck):
+            self.y = self.game.heightcheck - self.height
 
         self.image = pygame.Surface((self.width, self.height))
         if(self.name == "life"):
@@ -1076,6 +1082,6 @@ class Powerup(pygame.sprite.Sprite):
 
 """
 
-game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", backgroundCount = 4, fps=0)
+game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", backgroundCount = 4)
 game.startGame()
 
