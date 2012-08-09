@@ -249,9 +249,9 @@ class Game:
         pygame.init()
         self.clock = pygame.time.Clock()
         if(self.fullscreen):
-            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), FULLSCREEN)
+            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), FULLSCREEN | SRCALPHA)
         else:
-            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
+            self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), SRCALPHA)
             
         self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
 
