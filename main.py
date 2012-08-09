@@ -711,9 +711,6 @@ class Player(pygame.sprite.Sprite):
      
         self.image = self.image_normal
         self.rect = self.image.get_rect()
-        print("printam xy")
-        print(x)
-        print(y)
         self.rect.midbottom = (x, y)
         self.speed = speed
         self.vx = 0
@@ -1062,12 +1059,10 @@ class Powerup(pygame.sprite.Sprite):
         if(self.name == "invisibility"):
             player.invistimer = player.invistimerbase
             self.kill()
-            print("picked up invis :)")
         elif(self.name == "powerarrow"):
             player.powerarrow = player.powerarrowbase
             player.powerarrow_between = player.powerarrow_betweenbase
             self.kill()
-            print("picked up powerarrow")
         elif(self.name == "life"):
             player.lives += 1
             self.kill()
