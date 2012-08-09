@@ -831,11 +831,11 @@ class Player(pygame.sprite.Sprite):
 
     def shoot(self):
         if(self.powerarrow <= 0):
-            self.arrow = Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK)
+            self.arrow = Arrow(self.game, self, self.rect.centerx, self.rect.centery, 5, self.shooting_speed, BLACK)
             self.game.arrowGroup.add(self.arrow)
         else:
             if(self.powerarrow_between <= 0):
-                self.game.arrowGroup.add(Arrow(self.game, self, self.rect.centerx, self.rect.top, 5, self.shooting_speed, BLACK))
+                self.game.arrowGroup.add(Arrow(self.game, self, self.rect.centerx, self.rect.centery, 5, self.shooting_speed, BLACK))
                 self.powerarrow_between = self.powerarrow_betweenbase
                 
             
