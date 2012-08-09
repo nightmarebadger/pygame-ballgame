@@ -240,6 +240,8 @@ class Game:
                     return True
                 self.levelWon()
             elif(self.levellost):
+                self.levelLost()
+            elif(self.gamelost):
                 self.gameLost()
                 return True
         
@@ -272,14 +274,16 @@ class Game:
             self.powerupGroup = pygame.sprite.RenderPlain()
 
         # Player setup
+        """
         if(not self.two_player):
-            ply = Player(self, self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
         else:
-            ply = Player(self, 3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
-            ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
+            ply = Player(self, ord('a'), ord('d'), ord('1'), 2)
             self.playerGroup.add(ply)
+        """
 
     def levelReset(self):
         self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
@@ -300,12 +304,12 @@ class Game:
         
         self.playerGroup.empty()
         if(not self.two_player):
-            ply = Player(self, self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
         else:
-            ply = Player(self, 3 * self.windowwidth//4, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
+            ply = Player(self, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
-            ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
+            ply = Player(self, ord('a'), ord('d'), ord('1'), 2)
             self.playerGroup.add(ply)
             
         self.levelReset()
@@ -374,6 +378,7 @@ class Game:
     def gameLoop(self):
         self.levelwon = False
         self.levellost = False
+        self.gamelost = False
         self.continue_playing = True
         self.readLevel()
         if(self.show_fps):
@@ -415,9 +420,12 @@ class Game:
 
             # Update all groups
             self.ballGroup.update(time/1000)
-            self.playerGroup.update(time/1000)
+            #self.playerGroup.update(time/1000)
             self.arrowGroup.update(time/1000)
             self.powerupGroup.update(time/1000)
+            for ply in self.playerGroup:
+                if(not ply.dead):
+                    ply.update(time/1000)
 
             # Drawing
             
@@ -436,11 +444,14 @@ class Game:
             else:
                 self.surface.blit(self.background, (0, 0))
                 self.powerupGroup.draw(self.surface)
-                self.playerGroup.draw(self.surface)
+                #self.playerGroup.draw(self.surface)
                 self.ballGroup.draw(self.surface)
                 self.arrowGroup.draw(self.surface)
                 for ply in self.playerGroup:
                     ply.drawLives()
+                for ply in self.playerGroup:
+                    if(not ply.dead):
+                        self.surface.blit(ply.image, ply.rect)
                 
                 pygame.display.update()
 
@@ -599,7 +610,7 @@ class Game:
         base = self.windowheight//2
         add = 0
         self.surface.fill(BLACK)
-        drawText("You lost ... :(", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        drawText("You lost the game ... :(", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add = 100
         drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
@@ -612,6 +623,18 @@ class Game:
         drawText("Level won!", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 80
         drawText("Only {0} levels to go".format(self.endingLevel - self.currentLevel + 1), normalFont(30), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 20
+        drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
+        pygame.display.update()
+        self.waitForPlayerKeypress("any")
+        
+    def levelLost(self):
+        base = self.windowheight//2
+        add = 0
+        self.surface.fill(BLACK)
+        drawText("Level lost ...", normalFont(80), self.surface, self.windowwidth//2, base + add, WHITE)
+        add += 80
+        drawText("You still have some lives though :)".format(self.endingLevel - self.currentLevel + 1), normalFont(30), self.surface, self.windowwidth//2, base + add, WHITE)
         add += 20
         drawText("Press any key ... ", normalFont(20), self.surface, self.windowwidth//2, base + add, WHITE)
         pygame.display.update()
@@ -648,7 +671,7 @@ class Player(pygame.sprite.Sprite):
     print("Loudam slikce")
     
     
-    def __init__(self, game, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
+    def __init__(self, game, leftKey, rightKey, shootingKey, player_number = 1, x=None, y=None, speed=300):
         pygame.sprite.Sprite.__init__(self)
         
         self.game = game
@@ -658,14 +681,39 @@ class Player(pygame.sprite.Sprite):
             self.image_right = Player.image_right1.convert_alpha()
             self.image_normal = Player.image_normal1.convert_alpha()
             self.image_shooting = Player.image_shooting1.convert_alpha()
+            
+            if(self.game.two_player):
+                self.basex2_1 = 3 * self.game.windowwidth//4
+                self.basey2_1 = self.game.windowheight-50
+                if(x == None):
+                     x = self.basex2_1
+                if(y == None):
+                    y = self.basey2_1
+            else:
+                self.basex1 = self.game.windowwidth//2 
+                self.basey1 = self.game.windowheight-50
+                if(x == None):
+                    x = self.basex1
+                if(y == None):
+                    y = self.basey1
         else:
             self.image_left = Player.image_left2.convert_alpha()
             self.image_right = Player.image_right2.convert_alpha()
             self.image_normal = Player.image_normal2.convert_alpha()
-            self.image_shooting = Player.image_shooting2.convert_alpha()            
+            self.image_shooting = Player.image_shooting2.convert_alpha() 
+            
+            self.basex2_2 = self.game.windowwidth//4
+            self.basey2_2 = self.game.windowheight-50
+            if(x == None):
+                x = self.basex2_2
+            if(y == None):
+                y = self.basey2_2
      
         self.image = self.image_normal
         self.rect = self.image.get_rect()
+        print("printam xy")
+        print(x)
+        print(y)
         self.rect.midbottom = (x, y)
         self.speed = speed
         self.vx = 0
@@ -738,9 +786,19 @@ class Player(pygame.sprite.Sprite):
 
         if(self.invistimer <= 0):
             if(self.hitBalls(self.game.ballGroup)):
-                self.kill()
-                if(not self.game.playerGroup):
-                    self.game.levellost = True
+                self.lives -= 1
+                self.dead = True
+                i = j = sumlives = 0
+                for ply in self.game.playerGroup:
+                    i += 1
+                    sumlives += ply.lives
+                    if(ply.dead):
+                        j += 1
+                if(i == j):
+                    if(sumlives > 0):
+                        self.game.levellost = True
+                    else:
+                        self.game.gamelost = True
                     self.game.continue_playing = False
             
             
@@ -754,13 +812,11 @@ class Player(pygame.sprite.Sprite):
     def drawLives(self):
         #Draw lives
         if(self.player_number == 1):
-            self.game.surface.blit(self.life, (10,10))
-            for i in range(self.lives -1):
-                self.game.surface.blit(self.life, (10 + (i+1)*30,10))
+            for i in range(self.lives):
+                self.game.surface.blit(self.life, (10 + (i)*30,10))
         else:
-            self.game.surface.blit(self.life, (self.game.windowwidth - 30, 10))
-            for i in range(self.lives - 1):
-                self.game.surface.blit(self.life, (self.game.windowwidth - 30 - (i+1)*30, 10))
+            for i in range(self.lives):
+                self.game.surface.blit(self.life, (self.game.windowwidth - 30 - (i)*30, 10))
 
     def hitBalls(self, balls):
         for b in balls:
@@ -804,6 +860,17 @@ class Player(pygame.sprite.Sprite):
         self.invistimer = 0
         self.powerarrow = 0
         self.powerarrow_between = 0
+        
+        if(self.game.two_player):
+            if(self.player_number == 1):
+                self.rect.midbottom = (self.basex2_1, self.basey2_1)
+            else:
+                self.rect.midbottom = (self.basex2_2, self.basey2_2)
+        else:
+            self.rect.midbottom = (self.basex1, self.basey1)
+        
+        if(self.lives > 0):
+            self.dead = False
 
 class Arrow(pygame.sprite.Sprite):
 
