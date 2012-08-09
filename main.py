@@ -252,7 +252,7 @@ class Game:
             self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), FULLSCREEN)
         else:
             self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight))
-        pygame.display.set_caption(self.caption)
+            
         self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
 
         if(self.dirty):
@@ -283,7 +283,6 @@ class Game:
 
     def levelReset(self):
         self.background = pygame.image.load("images/background/{0}.png".format(random.randint(1,self.backgroundCount))).convert()
-        self.playerGroup.empty()
         self.ballGroup.empty()
         self.arrowGroup.empty()
         self.powerupGroup.empty()
@@ -292,6 +291,14 @@ class Game:
             self.surface.blit(self.background, (0,0))
             pygame.display.update()
 
+        for ply in self.playerGroup:
+            ply.reset()
+            
+
+    def gameReset(self):
+        self.score = 0
+        
+        self.playerGroup.empty()
         if(not self.two_player):
             ply = Player(self, self.windowwidth//2, self.windowheight-50, 300, K_LEFT, K_RIGHT, K_SPACE)
             self.playerGroup.add(ply)
@@ -300,10 +307,9 @@ class Game:
             self.playerGroup.add(ply)
             ply = Player(self, self.windowwidth//4, self.windowheight-50, 300, ord('a'), ord('d'), ord('1'), 2)
             self.playerGroup.add(ply)
-
-    def gameReset(self):
-        self.score = 0
+            
         self.levelReset()
+
 
     def readLevel(self):
         
@@ -629,18 +635,19 @@ class Game:
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
         pygame.sprite.Sprite.__init__(self)
-        if(player_number == 1):
-            self.image_left = pygame.image.load("images/player/ply1l.png")
-            self.image_right = pygame.image.load("images/player/ply1r.png")
-            self.image_normal = pygame.image.load("images/player/ply1n.png")
-            self.image_shooting = pygame.image.load("images/player/ply1s.png")
-        else:
-            self.image_left = pygame.image.load("images/player/ply2l.png")
-            self.image_right = pygame.image.load("images/player/ply2r.png")
-            self.image_normal = pygame.image.load("images/player/ply2n.png")
-            self.image_shooting = pygame.image.load("images/player/ply2s.png")
-
+        
         self.game = game
+        if(player_number == 1):
+            self.image_left = pygame.image.load("images/player/ply1l.png").convert_alpha()
+            self.image_right = pygame.image.load("images/player/ply1r.png").convert_alpha()
+            self.image_normal = pygame.image.load("images/player/ply1n.png").convert_alpha()
+            self.image_shooting = pygame.image.load("images/player/ply1s.png").convert_alpha()
+        else:
+            self.image_left = pygame.image.load("images/player/ply2l.png").convert_alpha()
+            self.image_right = pygame.image.load("images/player/ply2r.png").convert_alpha()
+            self.image_normal = pygame.image.load("images/player/ply2n.png").convert_alpha()
+            self.image_shooting = pygame.image.load("images/player/ply2s.png").convert_alpha()
+     
         self.image = self.image_normal
         self.rect = self.image.get_rect()
         self.rect.midbottom = (x, y)
@@ -720,6 +727,8 @@ class Player(pygame.sprite.Sprite):
             self.shoot()
         if(not self.shooting and self.arrow != None):
             self.shoot_stop()
+        
+        self.image.set_alpha(50)
 
     def hitBalls(self, balls):
         for b in balls:
@@ -751,7 +760,18 @@ class Player(pygame.sprite.Sprite):
         self.arrow.kill()
         self.arrow = None
 
-        
+    def reset(self):
+        self.image = self.image_normal
+        #self.rect = self.image.get_rect()
+        self.vx = 0
+        self.move = 0
+        self.shooting = False
+        self.arrow = None
+        self.left = False
+        self.right = False
+        self.invistimer = 0
+        self.powerarrow = 0
+        self.powerarrow_between = 0
 
 class Arrow(pygame.sprite.Sprite):
 
@@ -822,11 +842,11 @@ class Ball(pygame.sprite.Sprite):
         self.split_into = split_into
 
         if(self.color == "red"):
-            self.image = pygame.transform.scale(Ball.image_red, (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_red.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
         elif(self.color == "green"):
-            self.image = pygame.transform.scale(Ball.image_green, (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_green.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
         elif(self.color == "blue"):
-            self.image = pygame.transform.scale(Ball.image_blue, (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_blue.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
@@ -945,6 +965,6 @@ class Powerup(pygame.sprite.Sprite):
 
 """
 
-game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", backgroundCount = 4)
+game = Game(800, 650, 6, heightcheck = 600, caption = "Ball game", backgroundCount = 4, fps=0)
 game.startGame()
 
