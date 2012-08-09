@@ -439,6 +439,8 @@ class Game:
                 self.playerGroup.draw(self.surface)
                 self.ballGroup.draw(self.surface)
                 self.arrowGroup.draw(self.surface)
+                for ply in self.playerGroup:
+                    ply.drawLives()
                 
                 pygame.display.update()
 
@@ -633,20 +635,34 @@ class Game:
 ##############################
 
 class Player(pygame.sprite.Sprite):
+    image_left1 = pygame.image.load("images/player/ply1l.png")
+    image_right1 = pygame.image.load("images/player/ply1r.png")
+    image_normal1 = pygame.image.load("images/player/ply1n.png")
+    image_shooting1 = pygame.image.load("images/player/ply1s.png")
+    
+    image_left2 = pygame.image.load("images/player/ply2l.png")
+    image_right2 = pygame.image.load("images/player/ply2r.png")
+    image_normal2 = pygame.image.load("images/player/ply2n.png")
+    image_shooting2 = pygame.image.load("images/player/ply2s.png")
+    
+    print("Loudam slikce")
+    
+    
     def __init__(self, game, x, y, speed, leftKey, rightKey, shootingKey, player_number = 1):
         pygame.sprite.Sprite.__init__(self)
         
         self.game = game
-        if(player_number == 1):
-            self.image_left = pygame.image.load("images/player/ply1l.png").convert_alpha()
-            self.image_right = pygame.image.load("images/player/ply1r.png").convert_alpha()
-            self.image_normal = pygame.image.load("images/player/ply1n.png").convert_alpha()
-            self.image_shooting = pygame.image.load("images/player/ply1s.png").convert_alpha()
+        self.player_number = player_number
+        if(self.player_number == 1):
+            self.image_left = Player.image_left1.convert_alpha()
+            self.image_right = Player.image_right1.convert_alpha()
+            self.image_normal = Player.image_normal1.convert_alpha()
+            self.image_shooting = Player.image_shooting1.convert_alpha()
         else:
-            self.image_left = pygame.image.load("images/player/ply2l.png").convert_alpha()
-            self.image_right = pygame.image.load("images/player/ply2r.png").convert_alpha()
-            self.image_normal = pygame.image.load("images/player/ply2n.png").convert_alpha()
-            self.image_shooting = pygame.image.load("images/player/ply2s.png").convert_alpha()
+            self.image_left = Player.image_left2.convert_alpha()
+            self.image_right = Player.image_right2.convert_alpha()
+            self.image_normal = Player.image_normal2.convert_alpha()
+            self.image_shooting = Player.image_shooting2.convert_alpha()            
      
         self.image = self.image_normal
         self.rect = self.image.get_rect()
@@ -669,6 +685,12 @@ class Player(pygame.sprite.Sprite):
         self.powerarrow = 0
         self.powerarrow_betweenbase = 0.5
         self.powerarrow_between = 0
+        
+        self.lives = 3
+        self.life = pygame.Surface((20, 20))
+        self.life.fill(RED)
+        
+        self.dead = False
 
     def update(self, time):
         if(self.left == self.right):
@@ -728,7 +750,17 @@ class Player(pygame.sprite.Sprite):
         if(not self.shooting and self.arrow != None):
             self.shoot_stop()
         
-        self.image.set_alpha(50)
+       
+    def drawLives(self):
+        #Draw lives
+        if(self.player_number == 1):
+            self.game.surface.blit(self.life, (10,10))
+            for i in range(self.lives -1):
+                self.game.surface.blit(self.life, (10 + (i+1)*30,10))
+        else:
+            self.game.surface.blit(self.life, (self.game.windowwidth - 30, 10))
+            for i in range(self.lives - 1):
+                self.game.surface.blit(self.life, (self.game.windowwidth - 30 - (i+1)*30, 10))
 
     def hitBalls(self, balls):
         for b in balls:
@@ -842,11 +874,11 @@ class Ball(pygame.sprite.Sprite):
         self.split_into = split_into
 
         if(self.color == "red"):
-            self.image = pygame.transform.scale(Ball.image_red.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_red.convert_alpha(), (2 * self.rad, 2 * self.rad))
         elif(self.color == "green"):
-            self.image = pygame.transform.scale(Ball.image_green.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_green.convert_alpha(), (2 * self.rad, 2 * self.rad))
         elif(self.color == "blue"):
-            self.image = pygame.transform.scale(Ball.image_blue.convert_alpha(self.game.surface), (2 * self.rad, 2 * self.rad))
+            self.image = pygame.transform.scale(Ball.image_blue.convert_alpha(), (2 * self.rad, 2 * self.rad))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
 
@@ -955,6 +987,9 @@ class Powerup(pygame.sprite.Sprite):
             player.powerarrow_between = player.powerarrow_betweenbase
             self.kill()
             print("picked up powerarrow")
+        elif(self.name == "life"):
+            player.lives += 1
+            self.kill()
 
 """
     def __init__(self, windowwidth, windowheight, endingLevel,
