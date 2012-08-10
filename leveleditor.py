@@ -99,6 +99,7 @@ class Ball(pygame.sprite.Sprite):
                 self.rect.left = 0
             if(self.rect.right > self.editor.widthcheck):
                 self.rect.right = self.editor.widthcheck
+                
         
     def update(self):
         global x,y
@@ -139,6 +140,8 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x,y)
         
+    def drawArrow(self):
+        pygame.draw.line(self.editor.surface, BLACK, self.rect.center, (self.rect.centerx + self.vx, self.rect.centery + self.vy), 5)
             
 class Editor:
     def __init__(self, windowwidth, windowheight, widthcheck = None, heightcheck = None, fps=120):
@@ -184,10 +187,11 @@ class Editor:
         
         
         self.ballGroup = pygame.sprite.RenderPlain()
+        self.arrow = False
         
         
     def mainloop(self):
-        global x,y, onMouse, globalcount
+        global x,y, onMouse, globalcount, selected
         while True:
             self.clock.tick(self.fps)
             for event in pygame.event.get():
@@ -212,6 +216,10 @@ class Editor:
 
                 elif(event.type == MOUSEMOTION):
                     x,y = event.pos
+                    if(pygame.mouse.get_pressed()[0]):
+                        if(selected):
+                            selected.vx = event.pos[0] - selected.rect.centerx
+                            selected.vy = event.pos[1] - selected.rect.centery
                 elif(event.type == MOUSEBUTTONDOWN):
                     """
                         1: levi
@@ -224,24 +232,40 @@ class Editor:
                     """
                     #print("Mouse at ({0}, {1}), button {2}".format(event.pos[0], event.pos[1], event.button))
                     if(event.button == 1):
-                        flag = False
-                        for foo in menuballGroup:
-                            if(foo.rect.collidepoint(event.pos)):
-                                flag = True
-                                count = 0
-                                for i in itemsList:
-                                    if(i.color == foo.color):
-                                        globalcount = count
-                                    count += 1
-                                onMouse = itemsList[globalcount]
-                        for foo in self.menuRect.iteritems():
-                            if(foo[1].collidepoint(event.pos)):
-                                flag = True
-                                if(foo[0] == "option1"):
-                                    globalcount = -1
-                                print(foo[0])
-                        if(not flag and globalcount >= 0):
-                            onMouse.paint()
+                        #flag = False
+                        if(event.pos[0] <= self.widthcheck and event.pos[1] <= self.heightcheck):
+                            if(globalcount >= 0):
+                                onMouse.paint()
+                            if(selected):
+                                selected.vx = event.pos[0] - selected.rect.centerx
+                                selected.vy = event.pos[1] - selected.rect.centery
+                        else:
+                            for foo in menuballGroup:
+                                if(foo.rect.collidepoint(event.pos)):
+                                    #flag = True
+                                    count = 0
+                                    for i in itemsList:
+                                        if(i.color == foo.color):
+                                            globalcount = count
+                                        count += 1
+                                    onMouse = itemsList[globalcount]
+                            for foo in self.menuRect.iteritems():
+                                if(foo[1].collidepoint(event.pos)):
+                                    #flag = True
+                                    if(foo[0] == "option1"):
+                                        globalcount = -1
+                                    print(foo[0])
+                            
+                    if(event.button == 3):
+                        for foo in self.ballGroup:
+                            if( ((foo.rect.centerx - x)**2 + (foo.rect.centery - y)**2)**(1/2) <= foo.rad):
+                                selected = foo
+                                print(selected.vx, selected.vy)
+                                globalcount = -1
+                                #self.ballGroup.remove(foo)
+                                break
+                        
+                        
                     if(globalcount >= 0):
                         if(event.button == 4):
                             onMouse.rad += 2
@@ -273,16 +297,24 @@ class Editor:
         #newgame_rect = drawText("New game", normalFont(60), self.surface, self.windowwidth//2, 1/4 * self.windowheight, BLUE)
         for foo in self.drawmenuRect:
             eval(foo)
-        
+            
+        #if a ball is selected, draw something so we know :)
+        if(selected):
+            pygame.draw.circle(self.surface, BLACK, selected.rect.center, 10)
+            selected.drawArrow()
+            
         pygame.display.update()
         
 
 
 x = y = 0
 editor = Editor(1100, 800, widthcheck=800, heightcheck=600)
+
+selected = None
+
 editor.setup()
 
-ballRed = Ball(editor, x, y, 80, 0, 0, "red", 1, 1)
+ballRed = Ball(editor, x, y, 80, 100, 200, "red", 1, 1)
 ballBlue = Ball(editor, x, y, 80, 0, 0, "blue", 1, 1)
 ballGreen = Ball(editor, x, y, 80, 0, 0, "green", 1, 1)
 
