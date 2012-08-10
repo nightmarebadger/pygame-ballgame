@@ -249,6 +249,7 @@ class Game:
     def setup(self, reset = False):
         # Pygame stuff setup
         pygame.init()
+        pygame.display.set_caption(self.caption)
         self.clock = pygame.time.Clock()
         if(self.fullscreen):
             self.surface = pygame.display.set_mode((self.windowwidth, self.windowheight), FULLSCREEN | SRCALPHA)
