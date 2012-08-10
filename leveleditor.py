@@ -175,19 +175,60 @@ class Editor:
         
         self.menuRect = {}
         self.drawmenuRect = []
+        self.menuRectSelected = {}
+        self.drawmenuRectSelected = []
+        
         foo = 'drawText("Save level", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 50, BLUE)'
         self.menuItem(foo, "save")
         
         foo = 'drawText("Open level", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 100, BLUE)'
         self.menuItem(foo, "open")
         
+        foo = 'drawText("Delete chosen", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 200, BLUE)'
+        self.menuItem(foo, "delete", True)
+        
+        foo = 'drawText("Split times +1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 325, BLUE)'
+        self.menuItem(foo, "splittimes+1", True)
+        
+        foo = 'drawText("Split times -1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 350, BLUE)'
+        self.menuItem(foo, "splittimes-1", True)
+        #foo = 'drawText("Split into: {0}", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 300, BLUE)'
+        #self.menuItem(foo, "delete")
+        
+        foo = 'drawText("Split into +1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 425, BLUE)'
+        self.menuItem(foo, "splitinto+1", True)
+        
+        foo = 'drawText("Split into -1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 450, BLUE)'
+        self.menuItem(foo, "splitinto-1", True)
+        
+        foo = 'drawText("Vx +1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 525, BLUE)'
+        self.menuItem(foo, "vx+1", True)
+        foo = 'drawText("Vx -1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 550, BLUE)'
+        self.menuItem(foo, "vx-1", True)
+        foo = 'drawText("Vx +10", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 575, BLUE)'
+        self.menuItem(foo, "vx+10", True)
+        foo = 'drawText("Vx -10", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 600, BLUE)'
+        self.menuItem(foo, "vx-10", True)
+        
+        foo = 'drawText("Vy +1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 675, BLUE)'
+        self.menuItem(foo, "vy+1", True)
+        foo = 'drawText("Vy -1", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 700, BLUE)'
+        self.menuItem(foo, "vy-1", True)
+        foo = 'drawText("Vy +10", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 725, BLUE)'
+        self.menuItem(foo, "vy+10", True)
+        foo = 'drawText("Vy -10", normalFont(25), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 750, BLUE)'
+        self.menuItem(foo, "vy-10", True)
         
         self.ballGroup = pygame.sprite.RenderPlain()
         self.arrow = False
         
-    def menuItem(self, command, name):
-        self.menuRect[name] = eval(command)
-        self.drawmenuRect.append(command)
+    def menuItem(self, command, name, slc=False):
+        if(slc):
+            self.menuRectSelected[name] = eval(command)
+            self.drawmenuRectSelected.append(command)
+        else:
+            self.menuRect[name] = eval(command)
+            self.drawmenuRect.append(command)
         
         
     def mainloop(self):
@@ -201,11 +242,15 @@ class Editor:
                     if(event.key == K_ESCAPE):
                         terminate()
                     if(event.key == ord('a')):
+                        if(selected):
+                            selected = None
                         globalcount -= 1
                         if(globalcount < 0):
                             globalcount = 0
                         onMouse = itemsList[globalcount]
                     if(event.key == ord('s')):
+                        if(selected):
+                            selected = None
                         try:
                             globalcount += 1
                             onMouse = itemsList[globalcount]
@@ -218,8 +263,29 @@ class Editor:
                     x,y = event.pos
                     if(pygame.mouse.get_pressed()[0]):
                         if(selected):
-                            selected.vx = event.pos[0] - selected.rect.centerx
-                            selected.vy = event.pos[1] - selected.rect.centery
+                            if(event.pos[0] <= self.widthcheck and event.pos[1] <= self.heightcheck):
+                                selected.vx = event.pos[0] - selected.rect.centerx
+                                selected.vy = event.pos[1] - selected.rect.centery
+                            else:
+                                if(event.pos[0] == selected.rect.centerx):
+                                    selected.vx = 0
+                                    selected.vy = self.heightcheck - selected.rect.centery
+                                elif(event.pos[1] == selected.rect.centery):
+                                    selected.vx = self.widthcheck - selected.rect.centerx
+                                    selected.vy = 0
+                                #elif(event.pos[0] > self.widthcheck and event.pos[1] > self.heightcheck):
+                                else:
+                                    tmpx1 = event.pos[0] - self.widthcheck
+                                    tmpy1 = tmpx1*(event.pos[1] - selected.rect.centery)/(event.pos[0] - selected.rect.centerx)
+                                    if(event.pos[1] - tmpy1 <= self.heightcheck and event.pos[0] > selected.rect.centerx):
+                                        selected.vx = self.widthcheck - selected.rect.centerx
+                                        selected.vy = event.pos[1] - tmpy1 - selected.rect.centery
+                                    else:
+                                        tmpy2 = event.pos[1] - self.heightcheck
+                                        tmpx2 = tmpy2*(event.pos[0] - selected.rect.centerx)/(event.pos[1] - selected.rect.centery)
+                                        selected.vx = event.pos[0] - tmpx2 - selected.rect.centerx
+                                        selected.vy = self.heightcheck - selected.rect.centery
+                                        
                 elif(event.type == MOUSEBUTTONDOWN):
                     """
                         1: levi
@@ -242,6 +308,8 @@ class Editor:
                         else:
                             for foo in menuballGroup:
                                 if(foo.rect.collidepoint(event.pos)):
+                                    if(selected):
+                                        selected = None
                                     #flag = True
                                     count = 0
                                     for i in itemsList:
@@ -252,18 +320,50 @@ class Editor:
                             for foo in self.menuRect.iteritems():
                                 if(foo[1].collidepoint(event.pos)):
                                     #flag = True
-                                    if(foo[0] == "option1"):
-                                        globalcount = -1
                                     print(foo[0])
+                            if(selected):
+                                for foo in self.menuRectSelected.iteritems():
+                                    if(foo[1].collidepoint(event.pos)):
+                                        #flag = True
+                                        if(foo[0] == "delete"):
+                                            self.ballGroup.remove(selected)
+                                            selected = None
+                                        elif(foo[0] == "splittimes+1"):
+                                            selected.split_times += 1
+                                        elif(foo[0] == "splittimes-1"):
+                                            selected.split_times -= 1
+                                        elif(foo[0] == "splitinto+1"):
+                                            selected.split_into += 1
+                                        elif(foo[0] == "splitinto-1"):
+                                            selected.split_into -= 1
+                                        elif(foo[0] == "vx+1"):
+                                            selected.vx += 1
+                                        elif(foo[0] == "vx-1"):
+                                            selected.vx -= 1
+                                        elif(foo[0] == "vx+10"):
+                                            selected.vx += 10
+                                        elif(foo[0] == "vx-10"):
+                                            selected.vx -= 10
+                                        elif(foo[0] == "vy+1"):
+                                            selected.vy += 1
+                                        elif(foo[0] == "vy-1"):
+                                            selected.vy -= 1
+                                        elif(foo[0] == "vy+10"):
+                                            selected.vy += 10
+                                        elif(foo[0] == "vy-10"):
+                                            selected.vy -= 10
+                                        print(foo[0])
                             
-                    if(event.button == 3):
+                    elif(event.button == 3):
+                        selectflag = True
                         for foo in self.ballGroup:
                             if( ((foo.rect.centerx - x)**2 + (foo.rect.centery - y)**2)**(1/2) <= foo.rad):
+                                selectflag = False
                                 selected = foo
-                                print(selected.vx, selected.vy)
                                 globalcount = -1
-                                #self.ballGroup.remove(foo)
                                 break
+                        if(selectflag):
+                            selected = None
                         
                         
                     if(globalcount >= 0):
@@ -272,7 +372,7 @@ class Editor:
                             if(onMouse.rad < 1):
                                 onMouse.rad = 1
                             onMouse.rescale()
-                        if(event.button == 5):
+                        elif(event.button == 5):
                             onMouse.rad -= 2
                             if(onMouse.rad < 1):
                                 onMouse.rad = 1
@@ -302,7 +402,13 @@ class Editor:
         if(selected):
             pygame.draw.circle(self.surface, BLACK, selected.rect.center, 10)
             selected.drawArrow()
-            
+            drawText("Split times: {0}".format(selected.split_times), normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 300, BLUE)
+            drawText("Split into: {0}".format(selected.split_into), normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 400, BLUE)
+            drawText("Vx: {0}".format(selected.vx), normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 500, BLUE)
+            drawText("Vy: {0}".format(selected.vy), normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 650, BLUE)
+            for foo in self.drawmenuRectSelected:
+                eval(foo)
+                          
         pygame.display.update()
         
 
