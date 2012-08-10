@@ -141,7 +141,7 @@ class Ball(pygame.sprite.Sprite):
         self.rect.center = (x,y)
         
     def drawArrow(self):
-        pygame.draw.line(self.editor.surface, BLACK, self.rect.center, (self.rect.centerx + self.vx, self.rect.centery + self.vy), 5)
+        pygame.draw.line(self.editor.surface, BLACK, self.rect.center, (self.rect.centerx + self.vx, self.rect.centery + self.vy), 3)
             
 class Editor:
     def __init__(self, windowwidth, windowheight, widthcheck = None, heightcheck = None, fps=120):
@@ -175,19 +175,19 @@ class Editor:
         
         self.menuRect = {}
         self.drawmenuRect = []
-        foo = 'drawText("Delete", normalFont(40), self.surface, self.widthcheck + 10, 1/4 * self.heightcheck, BLUE, option="left")'
-        self.menurect_delete, self.menurect_delete_command = eval(foo), foo
-        self.menuRect["delete"] = self.menurect_delete
-        self.drawmenuRect.append(self.menurect_delete_command)
+        foo = 'drawText("Save level", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 50, BLUE)'
+        self.menuItem(foo, "save")
         
-        foo = 'drawText("Option 1", normalFont(50), self.surface, self.widthcheck + 50, 1/4 * self.heightcheck + 100, BLUE, option="left")'
-        self.menurect_option1, self.menurect_option1_command = eval(foo), foo
-        self.menuRect["option1"] = self.menurect_option1
-        self.drawmenuRect.append(self.menurect_option1_command)
+        foo = 'drawText("Open level", normalFont(50), self.surface, self.widthcheck + (self.windowwidth - self.widthcheck)/2, 100, BLUE)'
+        self.menuItem(foo, "open")
         
         
         self.ballGroup = pygame.sprite.RenderPlain()
         self.arrow = False
+        
+    def menuItem(self, command, name):
+        self.menuRect[name] = eval(command)
+        self.drawmenuRect.append(command)
         
         
     def mainloop(self):
