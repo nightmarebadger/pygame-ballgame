@@ -12,12 +12,6 @@ def terminate():
     
 def normalFont(size, font_name = "menu_font"):
 
-    if(font_debug):
-        print("------------")
-        print(size)
-        print(pygame.font.Font("fonts/{0}.ttf".format(font_name), size).get_height())
-        print(pygame.font.SysFont(None, size).get_height())
-        print(pygame.font.Font("fonts/{0}.ttf".format(font_name), int(size * 0.54)).get_height())
     try:
         return pygame.font.Font("fonts/{0}.ttf".format(font_name), size * 0.54)
     except:
@@ -37,6 +31,9 @@ def drawText(text, font, surface, x, y, color, option="center"):
     else:
         textrect.center = (x, y)
     surface.blit(textobj, textrect)
+    
+    #command = 'drawText("{0}", {1}, {2}, {3}, {4}, {5}, option="{6}")'.format(text, font, surface, x, y, color, option) 
+        
     return textrect
 
 
@@ -121,8 +118,14 @@ class Ball(pygame.sprite.Sprite):
     
     def paint(self):
         global x,y
-        tmpball = Ball(self.editor, x, y, self.rad, self.vx, self.vy, self.color, self.split_times, self.split_into)
-        self.editor.ballGroup.add(tmpball)
+        flag = True
+        for foo in self.editor.ballGroup:
+            if( ((foo.rect.centerx - x)**2 + (foo.rect.centery - y)**2)**(1/2) <= foo.rad + self.rad ):
+                flag = False
+                break
+        if(flag):
+            tmpball = Ball(self.editor, x, y, self.rad, self.vx, self.vy, self.color, self.split_times, self.split_into)
+            self.editor.ballGroup.add(tmpball)
         
 
     def rescale(self):
@@ -167,13 +170,24 @@ class Editor:
         self.level = pygame.Surface((self.widthcheck, self.heightcheck))
         self.level.fill(WHITE)
         
+        self.menuRect = {}
+        self.drawmenuRect = []
+        foo = 'drawText("Delete", normalFont(40), self.surface, self.widthcheck + 10, 1/4 * self.heightcheck, BLUE, option="left")'
+        self.menurect_delete, self.menurect_delete_command = eval(foo), foo
+        self.menuRect["delete"] = self.menurect_delete
+        self.drawmenuRect.append(self.menurect_delete_command)
+        
+        foo = 'drawText("Option 1", normalFont(50), self.surface, self.widthcheck + 50, 1/4 * self.heightcheck + 100, BLUE, option="left")'
+        self.menurect_option1, self.menurect_option1_command = eval(foo), foo
+        self.menuRect["option1"] = self.menurect_option1
+        self.drawmenuRect.append(self.menurect_option1_command)
+        
         
         self.ballGroup = pygame.sprite.RenderPlain()
         
         
     def mainloop(self):
         global x,y, onMouse, globalcount
-        #self.clock.tick()
         while True:
             self.clock.tick(self.fps)
             for event in pygame.event.get():
@@ -186,14 +200,14 @@ class Editor:
                         globalcount -= 1
                         if(globalcount < 0):
                             globalcount = 0
-                        else:
-                            onMouse = itemsList[globalcount]
+                        onMouse = itemsList[globalcount]
                     if(event.key == ord('s')):
                         try:
                             globalcount += 1
                             onMouse = itemsList[globalcount]
                         except:
                             globalcount -= 1
+                            onMouse = itemsList[globalcount]
 
 
                 elif(event.type == MOUSEMOTION):
@@ -220,18 +234,25 @@ class Editor:
                                         globalcount = count
                                     count += 1
                                 onMouse = itemsList[globalcount]
-                        if(not flag):
+                        for foo in self.menuRect.iteritems():
+                            if(foo[1].collidepoint(event.pos)):
+                                flag = True
+                                if(foo[0] == "option1"):
+                                    globalcount = -1
+                                print(foo[0])
+                        if(not flag and globalcount >= 0):
                             onMouse.paint()
-                    if(event.button == 4):
-                        onMouse.rad += 2
-                        if(onMouse.rad < 1):
-                            onMouse.rad = 1
-                        onMouse.rescale()
-                    if(event.button == 5):
-                        onMouse.rad -= 2
-                        if(onMouse.rad < 1):
-                            onMouse.rad = 1
-                        onMouse.rescale()
+                    if(globalcount >= 0):
+                        if(event.button == 4):
+                            onMouse.rad += 2
+                            if(onMouse.rad < 1):
+                                onMouse.rad = 1
+                            onMouse.rescale()
+                        if(event.button == 5):
+                            onMouse.rad -= 2
+                            if(onMouse.rad < 1):
+                                onMouse.rad = 1
+                            onMouse.rescale()
             
             onMouse.update()
             self.draw()
@@ -245,15 +266,20 @@ class Editor:
             self.surface.blit(ball.image, ball.rect)
         menuballGroup.draw(self.surface)
             
-        global onMouse
-        onMouse.draw()
+        #global onMouse
+        if(globalcount >= 0):
+            onMouse.draw()
+        
+        #newgame_rect = drawText("New game", normalFont(60), self.surface, self.windowwidth//2, 1/4 * self.windowheight, BLUE)
+        for foo in self.drawmenuRect:
+            eval(foo)
         
         pygame.display.update()
         
 
 
 x = y = 0
-editor = Editor(800, 800, widthcheck=800, heightcheck=600)
+editor = Editor(1100, 800, widthcheck=800, heightcheck=600)
 editor.setup()
 
 ballRed = Ball(editor, x, y, 80, 0, 0, "red", 1, 1)
@@ -275,6 +301,9 @@ menuballGroup.add(menuballRed, menuballBlue, menuballGreen)
 
 globalcount = 0
 itemsList = [ballRed, ballBlue, ballGreen]
+
+
+
 
 onMouse = itemsList[globalcount]
 
